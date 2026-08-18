@@ -3,7 +3,13 @@ namespace VersionControlManager.Migration;
 /// <summary>Human-readable sizes for the progress output.</summary>
 internal static class Describe
 {
+    #region Fields
+
     private static readonly string[] Units = ["bytes", "KB", "MB", "GB", "TB"];
+
+    #endregion
+
+    #region Public Methods
 
     public static string Bytes(long value)
     {
@@ -26,4 +32,6 @@ internal static class Describe
 
     /// <summary>GitHub reports repository size in kilobytes.</summary>
     public static string Kilobytes(long value) => value <= 0 ? "unknown" : Bytes(value * 1024);
+
+    #endregion
 }

@@ -27,7 +27,13 @@ internal sealed record MigrationResult(
 /// </summary>
 internal sealed class MigrationRunner(MigrationOptions options)
 {
+    #region Constants
+
     private const int TotalSteps = 8;
+
+    #endregion
+
+    #region Public Methods
 
     public async Task<MigrationResult> RunAsync(CancellationToken cancellationToken)
     {
@@ -122,6 +128,10 @@ internal sealed class MigrationRunner(MigrationOptions options)
             created,
             defaultBranch);
     }
+
+    #endregion
+
+    #region Private Methods
 
     /// <summary>
     /// An explicit --target-repo wins, then a repository named in the Azure DevOps URL,
@@ -327,4 +337,6 @@ internal sealed class MigrationRunner(MigrationOptions options)
 
         ConsoleLog.Success("Branch and tag counts match the source.");
     }
+
+    #endregion
 }

@@ -5,6 +5,8 @@ namespace VersionControlManager.Configuration;
 /// <summary>Interactive console input, with secrets never echoed to the screen.</summary>
 internal static class ConsolePrompt
 {
+    #region Public Methods
+
     /// <summary>Prompts until a non-empty value is given. Returns null if the user cancels.</summary>
     public static string? ReadRequired(string label)
     {
@@ -96,4 +98,6 @@ internal static class ConsolePrompt
             && (answer.Equals("y", StringComparison.OrdinalIgnoreCase)
                 || answer.Equals("yes", StringComparison.OrdinalIgnoreCase));
     }
+
+    #endregion
 }

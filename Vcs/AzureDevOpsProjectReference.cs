@@ -16,7 +16,13 @@ internal sealed record AzureDevOpsProjectReference(
     string Project,
     string? RepositoryName)
 {
+    #region Properties
+
     public string ProjectWebUrl => $"{CollectionUrl}/{Uri.EscapeDataString(Project)}";
+
+    #endregion
+
+    #region Public Methods
 
     public string RepositoryWebUrl(string repositoryName) =>
         $"{ProjectWebUrl}/_git/{Uri.EscapeDataString(repositoryName)}";
@@ -124,6 +130,10 @@ internal sealed record AzureDevOpsProjectReference(
             repository);
     }
 
+    #endregion
+
+    #region Private Methods
+
     /// <summary>The retired {org}.visualstudio.com form, which carries the org in the hostname.</summary>
     private static bool IsLegacyHost(string host) =>
         host.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase)
@@ -153,4 +163,6 @@ internal sealed record AzureDevOpsProjectReference(
         new(ExitCode.ConfigurationError,
             $"Could not read an Azure DevOps project from '{input}' -- {reason}.",
             "Expected something like https://dev.azure.com/organisation/project");
+
+    #endregion
 }

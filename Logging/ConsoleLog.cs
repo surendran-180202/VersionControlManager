@@ -9,16 +9,30 @@ namespace VersionControlManager.Logging;
 /// </summary>
 internal static class ConsoleLog
 {
+    #region Constants
+
     private const string Mask = "***";
 
     /// <summary>Shortest string we are willing to treat as a secret. Redacting a
     /// two-character token would blank out unrelated text and hide real errors.</summary>
     private const int MinimumSecretLength = 6;
 
+    #endregion
+
+    #region Fields
+
     private static readonly List<string> Secrets = [];
     private static readonly bool UseColour = !Console.IsOutputRedirected;
 
+    #endregion
+
+    #region Properties
+
     public static bool Verbose { get; set; }
+
+    #endregion
+
+    #region Public Methods
 
     /// <summary>
     /// Registers a value to be masked from all future output. Also registers the base64
@@ -34,14 +48,6 @@ internal static class ConsoleLog
         Add(secret);
         Add(Convert.ToBase64String(Encoding.UTF8.GetBytes($":{secret}")));
         Add(Convert.ToBase64String(Encoding.UTF8.GetBytes($"{userName ?? string.Empty}:{secret}")));
-    }
-
-    private static void Add(string value)
-    {
-        if (!Secrets.Contains(value, StringComparer.Ordinal))
-        {
-            Secrets.Add(value);
-        }
     }
 
     public static string Redact(string? text)
@@ -95,6 +101,18 @@ internal static class ConsoleLog
 
     public static void Blank() => Console.WriteLine();
 
+    #endregion
+
+    #region Private Methods
+
+    private static void Add(string value)
+    {
+        if (!Secrets.Contains(value, StringComparer.Ordinal))
+        {
+            Secrets.Add(value);
+        }
+    }
+
     private static void Write(ConsoleColor colour, string message, bool toError = false)
     {
         TextWriter writer = toError ? Console.Error : Console.Out;
@@ -110,4 +128,6 @@ internal static class ConsoleLog
         writer.WriteLine(message);
         Console.ForegroundColor = previous;
     }
+
+    #endregion
 }

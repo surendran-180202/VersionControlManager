@@ -11,7 +11,13 @@ namespace VersionControlManager.Configuration;
 /// </summary>
 internal static class OptionsBuilder
 {
+    #region Constants
+
     private const string EnvironmentPrefix = "VCM_";
+
+    #endregion
+
+    #region Public Methods
 
     public static MigrationOptions Build(string[] args, string settingsFilePath)
     {
@@ -48,6 +54,10 @@ internal static class OptionsBuilder
 
         return options;
     }
+
+    #endregion
+
+    #region Private Methods
 
     private static void RegisterSecrets(MigrationOptions options)
     {
@@ -290,4 +300,6 @@ internal static class OptionsBuilder
 
         return result;
     }
+
+    #endregion
 }

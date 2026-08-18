@@ -6,10 +6,16 @@ namespace VersionControlManager.Vcs;
 /// <summary>A GitHub repository identified from a user-supplied URL.</summary>
 internal sealed record GitHubRepositoryReference(string Host, string Owner, string Name, string ApiBaseUrl)
 {
+    #region Properties
+
     /// <summary>The HTTPS URL git clones from. Credentials are supplied by header, never here.</summary>
     public string CloneUrl => $"https://{Host}/{Owner}/{Name}.git";
 
     public string WebUrl => $"https://{Host}/{Owner}/{Name}";
+
+    #endregion
+
+    #region Public Methods
 
     public override string ToString() => $"{Owner}/{Name}";
 
@@ -81,6 +87,10 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
         return new GitHubRepositoryReference(host, owner, name, BuildApiBaseUrl(host));
     }
 
+    #endregion
+
+    #region Private Methods
+
     private static string NormaliseHost(string host)
     {
         host = host.Trim().TrimEnd('.');
@@ -109,4 +119,6 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
         new(ExitCode.ConfigurationError,
             $"Could not read a GitHub repository from '{input}' -- {reason}.",
             "Expected something like https://github.com/owner/repository");
+
+    #endregion
 }

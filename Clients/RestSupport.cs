@@ -9,7 +9,13 @@ namespace VersionControlManager.Clients;
 /// <summary>Shared plumbing for the two REST clients.</summary>
 internal static class RestSupport
 {
+    #region Constants
+
     public const string UserAgent = "VersionControlManager/1.0";
+
+    #endregion
+
+    #region Public Methods
 
     /// <summary>
     /// Builds an HTTP Basic credential. Both GitHub and Azure DevOps accept a personal
@@ -63,6 +69,36 @@ internal static class RestSupport
         ExitCode failureCode,
         CancellationToken cancellationToken) =>
         ExecuteAsync(client, request, serviceName, failureCode, true, cancellationToken);
+
+    public static HttpRequestMessage Json(HttpMethod method, string url, object? payload = null)
+    {
+        HttpRequestMessage request = new HttpRequestMessage(method, url);
+
+        if (payload is not null)
+        {
+            request.Content = new StringContent(
+                JsonSerializer.Serialize(payload),
+                Encoding.UTF8,
+                "application/json");
+        }
+
+        return request;
+    }
+
+    public static string? StringOrNull(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    public static string RequiredString(JsonElement element, string propertyName, string serviceName) =>
+        StringOrNull(element, propertyName)
+        ?? throw new MigrationException(
+            ExitCode.TargetError,
+            $"{serviceName} response did not include '{propertyName}'.");
+
+    #endregion
+
+    #region Private Methods
 
     /// <summary>
     /// The status code is inspected directly rather than matched against the error text:
@@ -144,32 +180,6 @@ internal static class RestSupport
         }
     }
 
-    public static HttpRequestMessage Json(HttpMethod method, string url, object? payload = null)
-    {
-        HttpRequestMessage request = new HttpRequestMessage(method, url);
-
-        if (payload is not null)
-        {
-            request.Content = new StringContent(
-                JsonSerializer.Serialize(payload),
-                Encoding.UTF8,
-                "application/json");
-        }
-
-        return request;
-    }
-
-    public static string? StringOrNull(JsonElement element, string propertyName) =>
-        element.TryGetProperty(propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String
-            ? value.GetString()
-            : null;
-
-    public static string RequiredString(JsonElement element, string propertyName, string serviceName) =>
-        StringOrNull(element, propertyName)
-        ?? throw new MigrationException(
-            ExitCode.TargetError,
-            $"{serviceName} response did not include '{propertyName}'.");
-
     private static bool LooksLikeJson(string body)
     {
         ReadOnlySpan<char> trimmed = body.AsSpan().TrimStart();
@@ -211,4 +221,6 @@ internal static class RestSupport
             ? "GitHub requires a personal access token (not an account password), with 'repo' scope."
             : "Azure DevOps requires a personal access token with Code (read, write, and manage) scope.";
     }
+
+    #endregion
 }

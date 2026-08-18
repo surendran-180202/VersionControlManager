@@ -18,7 +18,13 @@ internal sealed record GitHubRepositoryInfo(
 /// </summary>
 internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference repository) : IDisposable
 {
+    #region Constants
+
     private const string ServiceName = "GitHub";
+
+    #endregion
+
+    #region Public Methods
 
     public async Task<GitHubRepositoryInfo> GetRepositoryAsync(CancellationToken cancellationToken)
     {
@@ -42,7 +48,7 @@ internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference 
         JsonElement root = document.RootElement;
 
         long size = root.TryGetProperty("size", out JsonElement sizeElement)
-                   && sizeElement.TryGetInt64(out long sizeValue)
+                    && sizeElement.TryGetInt64(out long sizeValue)
             ? sizeValue
             : 0;
 
@@ -55,4 +61,6 @@ internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference 
     }
 
     public void Dispose() => client.Dispose();
+
+    #endregion
 }

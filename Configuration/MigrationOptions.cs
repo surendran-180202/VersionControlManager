@@ -6,6 +6,8 @@ namespace VersionControlManager.Configuration;
 /// </summary>
 internal sealed class MigrationOptions
 {
+    #region Properties
+
     public string GitHubUrl { get; set; } = string.Empty;
 
     public string GitHubUserName { get; set; } = string.Empty;
@@ -42,4 +44,6 @@ internal sealed class MigrationOptions
 
     /// <summary>Leave the mirror clone on disk after a successful migration.</summary>
     public bool KeepWorkingCopy { get; set; }
+
+    #endregion
 }
