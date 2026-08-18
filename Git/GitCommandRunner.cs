@@ -177,9 +177,9 @@ internal sealed class GitCommandRunner
 
 		List<(string Key, string Value)> settings =
 		[
-            // Empty value resets the helper list, so Git Credential Manager cannot pop up a
-            // dialog or substitute a cached identity for the one we were given.
-            ("credential.helper", string.Empty),
+			// Empty value resets the helper list, so Git Credential Manager cannot pop up a
+			// dialog or substitute a cached identity for the one we were given.
+			("credential.helper", string.Empty),
 			("core.askpass", string.Empty),
 		];
 
