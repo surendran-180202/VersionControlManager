@@ -6,117 +6,117 @@ namespace VersionControlManager;
 
 internal static class Program
 {
-    #region Privates
-    private static async Task<int> Main(string[] args)
-    {
-        Console.OutputEncoding = System.Text.Encoding.UTF8;
+	#region Privates
+	private static async Task<int> Main(string[] args)
+	{
+		Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-        if (args.Any(a => a is "--help" or "-h" or "-?" or "/?"))
-        {
-            WriteHelp();
-            return (int)ExitCode.Success;
-        }
+		if(args.Any(a => a is "--help" or "-h" or "-?" or "/?"))
+		{
+			WriteHelp();
+			return (int)ExitCode.Success;
+		}
 
-        using CancellationTokenSource cancellation = new CancellationTokenSource();
+		using CancellationTokenSource cancellation = new();
 
-        Console.CancelKeyPress += (_, e) =>
-        {
-            // Handle Ctrl+C ourselves so the temp mirror is cleaned up on the way out.
-            e.Cancel = true;
-            ConsoleLog.Blank();
-            ConsoleLog.Warn("Cancelling...");
-            cancellation.Cancel();
-        };
+		Console.CancelKeyPress += (_, e) =>
+		{
+			// Handle Ctrl+C ourselves so the temp mirror is cleaned up on the way out.
+			e.Cancel = true;
+			ConsoleLog.Blank();
+			ConsoleLog.Warn("Cancelling...");
+			cancellation.Cancel();
+		};
 
-        ConsoleLog.Banner(
-            "VersionControlManager",
-            "Migrates a GitHub repository, with its full check-in history, to Azure DevOps.");
+		ConsoleLog.Banner(
+			"VersionControlManager",
+			"Migrates a GitHub repository, with its full check-in history, to Azure DevOps.");
 
-        try
-        {
-            string settingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-            MigrationOptions options = OptionsBuilder.Build(args, settingsPath);
+		try
+		{
+			string settingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+			MigrationOptions options = OptionsBuilder.Build(args, settingsPath);
 
-            MigrationResult result = await new MigrationRunner(options).RunAsync(cancellation.Token);
+			MigrationResult result = await new MigrationRunner(options).RunAsync(cancellation.Token);
 
-            WriteSummary(result);
+			WriteSummary(result);
 
-            return (int)ExitCode.Success;
-        }
-        catch (MigrationException ex)
-        {
-            ConsoleLog.Blank();
-            ConsoleLog.Error(ex.Message);
+			return (int)ExitCode.Success;
+		}
+		catch(MigrationException ex)
+		{
+			ConsoleLog.Blank();
+			ConsoleLog.Error(ex.Message);
 
-            if (!string.IsNullOrWhiteSpace(ex.Hint))
-            {
-                ConsoleLog.Info($"Hint: {ex.Hint}");
-            }
+			if(!string.IsNullOrWhiteSpace(ex.Hint))
+			{
+				ConsoleLog.Info($"Hint: {ex.Hint}");
+			}
 
-            ConsoleLog.Blank();
+			ConsoleLog.Blank();
 
-            return (int)ex.ExitCode;
-        }
-        catch (OperationCanceledException)
-        {
-            ConsoleLog.Blank();
-            ConsoleLog.Error("Cancelled before the migration finished.");
-            ConsoleLog.Info("Nothing was left behind locally. Check the target repository before re-running.");
-            ConsoleLog.Blank();
+			return (int)ex.ExitCode;
+		}
+		catch(OperationCanceledException)
+		{
+			ConsoleLog.Blank();
+			ConsoleLog.Error("Cancelled before the migration finished.");
+			ConsoleLog.Info("Nothing was left behind locally. Check the target repository before re-running.");
+			ConsoleLog.Blank();
 
-            return (int)ExitCode.Cancelled;
-        }
-        catch (Exception ex)
-        {
-            // Unexpected: show the type and message, and the stack trace only when asked,
-            // but never the raw exception text unredacted.
-            ConsoleLog.Blank();
-            ConsoleLog.Error($"Unexpected {ex.GetType().Name}: {ex.Message}");
+			return (int)ExitCode.Cancelled;
+		}
+		catch(Exception ex)
+		{
+			// Unexpected: show the type and message, and the stack trace only when asked,
+			// but never the raw exception text unredacted.
+			ConsoleLog.Blank();
+			ConsoleLog.Error($"Unexpected {ex.GetType().Name}: {ex.Message}");
 
-            if (ConsoleLog.Verbose && ex.StackTrace is not null)
-            {
-                ConsoleLog.Detail(ex.StackTrace);
-            }
-            else
-            {
-                ConsoleLog.Info("Re-run with --verbose for more detail.");
-            }
+			if(ConsoleLog.Verbose && ex.StackTrace is not null)
+			{
+				ConsoleLog.Detail(ex.StackTrace);
+			}
+			else
+			{
+				ConsoleLog.Info("Re-run with --verbose for more detail.");
+			}
 
-            ConsoleLog.Blank();
+			ConsoleLog.Blank();
 
-            return (int)ExitCode.UnexpectedError;
-        }
-    }
+			return (int)ExitCode.UnexpectedError;
+		}
+	}
 
-    private static void WriteSummary(MigrationResult result)
-    {
-        ConsoleLog.Blank();
-        ConsoleLog.Success("Migration complete.");
-        ConsoleLog.Blank();
-        ConsoleLog.Info($"Source:    {result.SourceDescription}");
-        ConsoleLog.Info($"Target:    {result.TargetDescription}{(result.CreatedTargetRepository ? " (created)" : "")}");
-        ConsoleLog.Info($"Commits:   {result.CommitCount:N0}");
-        ConsoleLog.Info($"Branches:  {result.BranchCount}");
-        ConsoleLog.Info($"Tags:      {result.TagCount}");
+	private static void WriteSummary(MigrationResult result)
+	{
+		ConsoleLog.Blank();
+		ConsoleLog.Success("Migration complete.");
+		ConsoleLog.Blank();
+		ConsoleLog.Info($"Source:    {result.SourceDescription}");
+		ConsoleLog.Info($"Target:    {result.TargetDescription}{(result.CreatedTargetRepository ? " (created)" : "")}");
+		ConsoleLog.Info($"Commits:   {result.CommitCount:N0}");
+		ConsoleLog.Info($"Branches:  {result.BranchCount}");
+		ConsoleLog.Info($"Tags:      {result.TagCount}");
 
-        if (result.NoteCount > 0)
-        {
-            ConsoleLog.Info($"Notes:     {result.NoteCount}");
-        }
+		if(result.NoteCount > 0)
+		{
+			ConsoleLog.Info($"Notes:     {result.NoteCount}");
+		}
 
-        if (result.DefaultBranch is not null)
-        {
-            ConsoleLog.Info($"Default:   {result.DefaultBranch}");
-        }
+		if(result.DefaultBranch is not null)
+		{
+			ConsoleLog.Info($"Default:   {result.DefaultBranch}");
+		}
 
-        ConsoleLog.Blank();
-        ConsoleLog.Info($"Open it at {result.TargetUrl}");
-        ConsoleLog.Blank();
-    }
+		ConsoleLog.Blank();
+		ConsoleLog.Info($"Open it at {result.TargetUrl}");
+		ConsoleLog.Blank();
+	}
 
-    private static void WriteHelp()
-    {
-        Console.WriteLine("""
+	private static void WriteHelp()
+	{
+		Console.WriteLine("""
 
             VersionControlManager
               Copies a GitHub repository, including its full check-in history, into Azure DevOps.
@@ -166,6 +166,6 @@ internal static class Program
               4 target     5 git             6 cancelled     99 unexpected
 
             """);
-    }
-    #endregion
+	}
+	#endregion
 }

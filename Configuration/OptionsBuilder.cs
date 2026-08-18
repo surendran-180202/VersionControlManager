@@ -11,289 +11,279 @@ namespace VersionControlManager.Configuration;
 /// </summary>
 internal static class OptionsBuilder
 {
-    #region Constants
-    private const string EnvironmentPrefix = "VCM_";
-    #endregion
+	#region Constants
+	private const string EnvironmentPrefix = "VCM_";
+	#endregion
 
-    #region Publics
-    public static MigrationOptions Build(string[] args, string settingsFilePath)
-    {
-        Dictionary<string, string?> cli = ParseArguments(args);
-        Dictionary<string, string> file = ReadSettingsFile(settingsFilePath);
+	#region Publics
+	public static MigrationOptions Build(string[] args, string settingsFilePath)
+	{
+		Dictionary<string, string?> cli = ParseArguments(args);
+		Dictionary<string, string> file = ReadSettingsFile(settingsFilePath);
 
-        MigrationOptions options = new MigrationOptions
-        {
-            NonInteractive = cli.ContainsKey("non-interactive"),
-            Verbose = cli.ContainsKey("verbose"),
-            AllowExistingTarget = cli.ContainsKey("allow-existing"),
-            IncludeLfs = cli.ContainsKey("lfs"),
-            IncludeNotes = !cli.ContainsKey("no-notes"),
-            KeepWorkingCopy = cli.ContainsKey("keep"),
-            TargetRepositoryName = Resolve("target-repo", "TARGET_REPO", "targetRepository", cli, file),
-            WorkingDirectory = Resolve("work-dir", "WORK_DIR", "workingDirectory", cli, file),
-        };
+		MigrationOptions options = new()
+		{
+			NonInteractive = cli.ContainsKey("non-interactive"),
+			Verbose = cli.ContainsKey("verbose"),
+			AllowExistingTarget = cli.ContainsKey("allow-existing"),
+			IncludeLfs = cli.ContainsKey("lfs"),
+			IncludeNotes = !cli.ContainsKey("no-notes"),
+			KeepWorkingCopy = cli.ContainsKey("keep"),
+			TargetRepositoryName = Resolve("target-repo", "TARGET_REPO", "targetRepository", cli, file),
+			WorkingDirectory = Resolve("work-dir", "WORK_DIR", "workingDirectory", cli, file),
+		};
 
-        ConsoleLog.Verbose = options.Verbose;
+		ConsoleLog.Verbose = options.Verbose;
 
-        options.GitHubUrl = Resolve("github-url", "GITHUB_URL", "gitHubUrl", cli, file) ?? string.Empty;
-        options.GitHubUserName = Resolve("github-user", "GITHUB_USER", "gitHubUserName", cli, file) ?? string.Empty;
-        options.GitHubPassword = Resolve("github-password", "GITHUB_PASSWORD", "gitHubPassword", cli, file) ?? string.Empty;
+		options.GitHubUrl = Resolve("github-url", "GITHUB_URL", "gitHubUrl", cli, file) ?? string.Empty;
+		options.GitHubUserName = Resolve("github-user", "GITHUB_USER", "gitHubUserName", cli, file) ?? string.Empty;
+		options.GitHubPassword = Resolve("github-password", "GITHUB_PASSWORD", "gitHubPassword", cli, file) ?? string.Empty;
 
-        options.AzureDevOpsUrl = Resolve("azure-url", "AZURE_URL", "azureDevOpsUrl", cli, file) ?? string.Empty;
-        options.AzureDevOpsUserName = Resolve("azure-user", "AZURE_USER", "azureDevOpsUserName", cli, file) ?? string.Empty;
-        options.AzureDevOpsPassword = Resolve("azure-password", "AZURE_PASSWORD", "azureDevOpsPassword", cli, file) ?? string.Empty;
+		options.AzureDevOpsUrl = Resolve("azure-url", "AZURE_URL", "azureDevOpsUrl", cli, file) ?? string.Empty;
+		options.AzureDevOpsUserName = Resolve("azure-user", "AZURE_USER", "azureDevOpsUserName", cli, file) ?? string.Empty;
+		options.AzureDevOpsPassword = Resolve("azure-password", "AZURE_PASSWORD", "azureDevOpsPassword", cli, file) ?? string.Empty;
 
-        // Mask anything already known before we prompt for or print anything else.
-        RegisterSecrets(options);
+		// Mask anything already known before we prompt for or print anything else.
+		RegisterSecrets(options);
 
-        FillGaps(options);
-        RegisterSecrets(options);
+		FillGaps(options);
+		RegisterSecrets(options);
 
-        return options;
-    }
-    #endregion
+		return options;
+	}
+	#endregion
 
-    #region Privates
-    private static void RegisterSecrets(MigrationOptions options)
-    {
-        ConsoleLog.RegisterSecret(options.GitHubPassword, options.GitHubUserName);
-        ConsoleLog.RegisterSecret(options.AzureDevOpsPassword, options.AzureDevOpsUserName);
-    }
+	#region Privates
+	private static void RegisterSecrets(MigrationOptions options)
+	{
+		ConsoleLog.RegisterSecret(options.GitHubPassword, options.GitHubUserName);
+		ConsoleLog.RegisterSecret(options.AzureDevOpsPassword, options.AzureDevOpsUserName);
+	}
 
-    /// <summary>Prompts for whatever is still missing, or fails if running non-interactively.</summary>
-    private static void FillGaps(MigrationOptions options)
-    {
-        List<string> missing = new List<string>();
+	/// <summary>Prompts for whatever is still missing, or fails if running non-interactively.</summary>
+	private static void FillGaps(MigrationOptions options)
+	{
+		List<string> missing = [];
 
-        void Text(string label, string cliName, Func<string> get, Action<string> set)
-        {
-            if (get().Length > 0)
-            {
-                return;
-            }
+		void Text(string label, string cliName, Func<string> get, Action<string> set)
+		{
+			if(get().Length > 0)
+			{
+				return;
+			}
 
-            if (options.NonInteractive)
-            {
-                missing.Add($"{label} (--{cliName})");
-                return;
-            }
+			if(options.NonInteractive)
+			{
+				missing.Add($"{label} (--{cliName})");
+				return;
+			}
 
-            string? value = ConsolePrompt.ReadRequired(label);
+			string? value = ConsolePrompt.ReadRequired(label) ?? throw new MigrationException(ExitCode.Cancelled, "Input was cancelled.");
+			set(value);
+		}
 
-            if (value is null)
-            {
-                throw new MigrationException(ExitCode.Cancelled, "Input was cancelled.");
-            }
+		void Secret(string label, string cliName, Func<string> get, Action<string> set)
+		{
+			if(get().Length > 0)
+			{
+				return;
+			}
 
-            set(value);
-        }
+			if(options.NonInteractive)
+			{
+				missing.Add($"{label} (--{cliName})");
+				return;
+			}
 
-        void Secret(string label, string cliName, Func<string> get, Action<string> set)
-        {
-            if (get().Length > 0)
-            {
-                return;
-            }
+			string? value = ConsolePrompt.ReadSecret(label) ?? throw new MigrationException(ExitCode.Cancelled, "Input was cancelled.");
+			set(value);
+		}
 
-            if (options.NonInteractive)
-            {
-                missing.Add($"{label} (--{cliName})");
-                return;
-            }
+		bool interactive = !options.NonInteractive && NeedsAnyInput(options);
 
-            string? value = ConsolePrompt.ReadSecret(label);
+		if(interactive)
+		{
+			ConsoleLog.Blank();
+			ConsoleLog.Info("Enter the source and target details. Passwords are not echoed.");
+			ConsoleLog.Blank();
+			Console.WriteLine("  -- GitHub (source) --");
+		}
 
-            if (value is null)
-            {
-                throw new MigrationException(ExitCode.Cancelled, "Input was cancelled.");
-            }
+		Text("GitHub repository URL", "github-url", () => options.GitHubUrl, v => options.GitHubUrl = v);
+		Text("GitHub username", "github-user", () => options.GitHubUserName, v => options.GitHubUserName = v);
+		Secret("GitHub password / token", "github-password", () => options.GitHubPassword, v => options.GitHubPassword = v);
 
-            set(value);
-        }
+		if(interactive)
+		{
+			Console.WriteLine();
+			Console.WriteLine("  -- Azure DevOps (target) --");
+		}
 
-        bool interactive = !options.NonInteractive && NeedsAnyInput(options);
+		Text("Azure DevOps project URL", "azure-url", () => options.AzureDevOpsUrl, v => options.AzureDevOpsUrl = v);
+		Text("Azure DevOps username", "azure-user", () => options.AzureDevOpsUserName, v => options.AzureDevOpsUserName = v);
+		Secret("Azure DevOps password / token", "azure-password", () => options.AzureDevOpsPassword, v => options.AzureDevOpsPassword = v);
 
-        if (interactive)
-        {
-            ConsoleLog.Blank();
-            ConsoleLog.Info("Enter the source and target details. Passwords are not echoed.");
-            ConsoleLog.Blank();
-            Console.WriteLine("  -- GitHub (source) --");
-        }
+		if(missing.Count > 0)
+		{
+			throw new MigrationException(
+				ExitCode.ConfigurationError,
+				$"Running with --non-interactive but these values were not supplied: {string.Join(", ", missing)}.",
+				"Drop --non-interactive to be prompted, or pass the missing arguments.");
+		}
+	}
 
-        Text("GitHub repository URL", "github-url", () => options.GitHubUrl, v => options.GitHubUrl = v);
-        Text("GitHub username", "github-user", () => options.GitHubUserName, v => options.GitHubUserName = v);
-        Secret("GitHub password / token", "github-password", () => options.GitHubPassword, v => options.GitHubPassword = v);
+	private static bool NeedsAnyInput(MigrationOptions options)
+	{
+		return options.GitHubUrl.Length == 0
+		|| options.GitHubUserName.Length == 0
+		|| options.GitHubPassword.Length == 0
+		|| options.AzureDevOpsUrl.Length == 0
+		|| options.AzureDevOpsUserName.Length == 0
+		|| options.AzureDevOpsPassword.Length == 0;
+	}
 
-        if (interactive)
-        {
-            Console.WriteLine();
-            Console.WriteLine("  -- Azure DevOps (target) --");
-        }
+	private static string? Resolve(
+		string cliName,
+		string environmentSuffix,
+		string settingsName,
+		Dictionary<string, string?> cli,
+		Dictionary<string, string> file)
+	{
+		if(cli.TryGetValue(cliName, out string? fromCli) && !string.IsNullOrWhiteSpace(fromCli))
+		{
+			return fromCli.Trim();
+		}
 
-        Text("Azure DevOps project URL", "azure-url", () => options.AzureDevOpsUrl, v => options.AzureDevOpsUrl = v);
-        Text("Azure DevOps username", "azure-user", () => options.AzureDevOpsUserName, v => options.AzureDevOpsUserName = v);
-        Secret("Azure DevOps password / token", "azure-password", () => options.AzureDevOpsPassword, v => options.AzureDevOpsPassword = v);
+		string? fromEnvironment = Environment.GetEnvironmentVariable(EnvironmentPrefix + environmentSuffix);
 
-        if (missing.Count > 0)
-        {
-            throw new MigrationException(
-                ExitCode.ConfigurationError,
-                $"Running with --non-interactive but these values were not supplied: {string.Join(", ", missing)}.",
-                "Drop --non-interactive to be prompted, or pass the missing arguments.");
-        }
-    }
+		if(!string.IsNullOrWhiteSpace(fromEnvironment))
+		{
+			return fromEnvironment.Trim();
+		}
 
-    private static bool NeedsAnyInput(MigrationOptions options) =>
-        options.GitHubUrl.Length == 0
-        || options.GitHubUserName.Length == 0
-        || options.GitHubPassword.Length == 0
-        || options.AzureDevOpsUrl.Length == 0
-        || options.AzureDevOpsUserName.Length == 0
-        || options.AzureDevOpsPassword.Length == 0;
+		if(file.TryGetValue(settingsName, out string? fromFile) && !string.IsNullOrWhiteSpace(fromFile))
+		{
+			return fromFile.Trim();
+		}
 
-    private static string? Resolve(
-        string cliName,
-        string environmentSuffix,
-        string settingsName,
-        Dictionary<string, string?> cli,
-        Dictionary<string, string> file)
-    {
-        if (cli.TryGetValue(cliName, out string? fromCli) && !string.IsNullOrWhiteSpace(fromCli))
-        {
-            return fromCli.Trim();
-        }
+		return null;
+	}
 
-        string? fromEnvironment = Environment.GetEnvironmentVariable(EnvironmentPrefix + environmentSuffix);
+	/// <summary>
+	/// Reads flags and --name=value / --name value pairs. Unknown names are rejected rather
+	/// than ignored, so a typo cannot silently drop a setting.
+	/// </summary>
+	private static Dictionary<string, string?> ParseArguments(string[] args)
+	{
+		HashSet<string> known = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"github-url", "github-user", "github-password",
+			"azure-url", "azure-user", "azure-password",
+			"target-repo", "work-dir",
+			"allow-existing", "lfs", "no-notes", "non-interactive", "verbose", "keep",
+		};
 
-        if (!string.IsNullOrWhiteSpace(fromEnvironment))
-        {
-            return fromEnvironment.Trim();
-        }
+		HashSet<string> flags = new(StringComparer.OrdinalIgnoreCase)
+		{
+			"allow-existing", "lfs", "no-notes", "non-interactive", "verbose", "keep",
+		};
 
-        if (file.TryGetValue(settingsName, out string? fromFile) && !string.IsNullOrWhiteSpace(fromFile))
-        {
-            return fromFile.Trim();
-        }
+		Dictionary<string, string?> result = new(StringComparer.OrdinalIgnoreCase);
 
-        return null;
-    }
+		for(int i = 0; i < args.Length; i++)
+		{
+			string arg = args[i];
 
-    /// <summary>
-    /// Reads flags and --name=value / --name value pairs. Unknown names are rejected rather
-    /// than ignored, so a typo cannot silently drop a setting.
-    /// </summary>
-    private static Dictionary<string, string?> ParseArguments(string[] args)
-    {
-        HashSet<string> known = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "github-url", "github-user", "github-password",
-            "azure-url", "azure-user", "azure-password",
-            "target-repo", "work-dir",
-            "allow-existing", "lfs", "no-notes", "non-interactive", "verbose", "keep",
-        };
+			if(!arg.StartsWith("--", StringComparison.Ordinal))
+			{
+				throw new MigrationException(
+					ExitCode.ConfigurationError,
+					$"Unexpected argument '{arg}'.",
+					"Run with --help to see the available options.");
+			}
 
-        HashSet<string> flags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "allow-existing", "lfs", "no-notes", "non-interactive", "verbose", "keep",
-        };
+			string name = arg[2..];
+			string? value = null;
 
-        Dictionary<string, string?> result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+			int equals = name.IndexOf('=');
 
-        for (int i = 0; i < args.Length; i++)
-        {
-            string arg = args[i];
+			if(equals >= 0)
+			{
+				value = name[(equals + 1)..];
+				name = name[..equals];
+			}
 
-            if (!arg.StartsWith("--", StringComparison.Ordinal))
-            {
-                throw new MigrationException(
-                    ExitCode.ConfigurationError,
-                    $"Unexpected argument '{arg}'.",
-                    "Run with --help to see the available options.");
-            }
+			if(!known.Contains(name))
+			{
+				throw new MigrationException(
+					ExitCode.ConfigurationError,
+					$"Unknown option '--{name}'.",
+					"Run with --help to see the available options.");
+			}
 
-            string name = arg[2..];
-            string? value = null;
+			if(flags.Contains(name))
+			{
+				result[name] = "true";
+				continue;
+			}
 
-            int equals = name.IndexOf('=');
+			if(value is null)
+			{
+				if(i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
+				{
+					throw new MigrationException(
+						ExitCode.ConfigurationError,
+						$"Option '--{name}' needs a value.");
+				}
 
-            if (equals >= 0)
-            {
-                value = name[(equals + 1)..];
-                name = name[..equals];
-            }
+				value = args[++i];
+			}
 
-            if (!known.Contains(name))
-            {
-                throw new MigrationException(
-                    ExitCode.ConfigurationError,
-                    $"Unknown option '--{name}'.",
-                    "Run with --help to see the available options.");
-            }
+			result[name] = value;
+		}
 
-            if (flags.Contains(name))
-            {
-                result[name] = "true";
-                continue;
-            }
+		return result;
+	}
 
-            if (value is null)
-            {
-                if (i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
-                {
-                    throw new MigrationException(
-                        ExitCode.ConfigurationError,
-                        $"Option '--{name}' needs a value.");
-                }
+	/// <summary>
+	/// Reads optional non-secret defaults from appsettings.json. A malformed file is a
+	/// warning rather than a failure -- the values can still be supplied another way.
+	/// </summary>
+	private static Dictionary<string, string> ReadSettingsFile(string path)
+	{
+		Dictionary<string, string> result = new(StringComparer.OrdinalIgnoreCase);
 
-                value = args[++i];
-            }
+		if(!File.Exists(path))
+		{
+			return result;
+		}
 
-            result[name] = value;
-        }
+		try
+		{
+			using JsonDocument document = JsonDocument.Parse(
+				File.ReadAllText(path),
+				new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
 
-        return result;
-    }
+			if(!document.RootElement.TryGetProperty("migration", out JsonElement migration)
+				|| migration.ValueKind != JsonValueKind.Object)
+			{
+				return result;
+			}
 
-    /// <summary>
-    /// Reads optional non-secret defaults from appsettings.json. A malformed file is a
-    /// warning rather than a failure -- the values can still be supplied another way.
-    /// </summary>
-    private static Dictionary<string, string> ReadSettingsFile(string path)
-    {
-        Dictionary<string, string> result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+			foreach(JsonProperty property in migration.EnumerateObject())
+			{
+				if(property.Value.ValueKind == JsonValueKind.String)
+				{
+					result[property.Name] = property.Value.GetString() ?? string.Empty;
+				}
+			}
+		}
+		catch(Exception ex) when(ex is JsonException or IOException or UnauthorizedAccessException)
+		{
+			ConsoleLog.Warn($"Ignoring {Path.GetFileName(path)}: {ex.Message}");
+		}
 
-        if (!File.Exists(path))
-        {
-            return result;
-        }
-
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(
-                File.ReadAllText(path),
-                new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
-
-            if (!document.RootElement.TryGetProperty("migration", out JsonElement migration)
-                || migration.ValueKind != JsonValueKind.Object)
-            {
-                return result;
-            }
-
-            foreach (JsonProperty property in migration.EnumerateObject())
-            {
-                if (property.Value.ValueKind == JsonValueKind.String)
-                {
-                    result[property.Name] = property.Value.GetString() ?? string.Empty;
-                }
-            }
-        }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
-        {
-            ConsoleLog.Warn($"Ignoring {Path.GetFileName(path)}: {ex.Message}");
-        }
-
-        return result;
-    }
-    #endregion
+		return result;
+	}
+	#endregion
 }
