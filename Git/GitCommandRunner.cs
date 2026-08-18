@@ -41,10 +41,7 @@ internal sealed class GitCommandRunner
 		{
 			GitResult gitResult = await this.RunAsync(["--version"], cancellationToken: cancellationToken);
 
-			if(!gitResult.Success)
-			{
-				throw new MigrationException(ExitCode.GitError, $"'git --version' failed: {gitResult.FailureText}");
-			}
+			if(!gitResult.Success) throw new MigrationException(ExitCode.GitError, $"'git --version' failed: {gitResult.FailureText}");
 
 			return gitResult.StandardOutput.Trim();
 		}
@@ -111,32 +108,20 @@ internal sealed class GitCommandRunner
 		// these events treats CR as a line break, so progress arrives as it is produced.
 		process.OutputDataReceived += (_, e) =>
 		{
-			if(e.Data is null)
-			{
-				return;
-			}
+			if(e.Data is null) return;
 
 			standardOutput.AppendLine(e.Data);
 
-			if(bRelayProgress && e.Data.Trim().Length > 0)
-			{
-				ConsoleLog.Relay(e.Data.Trim());
-			}
+			if(bRelayProgress && e.Data.Trim().Length > 0) ConsoleLog.Relay(e.Data.Trim());
 		};
 
 		process.ErrorDataReceived += (_, e) =>
 		{
-			if(e.Data is null)
-			{
-				return;
-			}
+			if(e.Data is null) return;
 
 			standardError.AppendLine(e.Data);
 
-			if(bRelayProgress && e.Data.Trim().Length > 0)
-			{
-				ConsoleLog.Relay(e.Data.Trim());
-			}
+			if(bRelayProgress && e.Data.Trim().Length > 0) ConsoleLog.Relay(e.Data.Trim());
 		};
 
 		process.Start();
@@ -183,10 +168,7 @@ internal sealed class GitCommandRunner
 			("core.askpass", string.Empty),
 		];
 
-		if(!string.IsNullOrEmpty(strAuthorizationHeader))
-		{
-			liSettings.Add(("http.extraheader", $"AUTHORIZATION: {strAuthorizationHeader}"));
-		}
+		if(!string.IsNullOrEmpty(strAuthorizationHeader)) liSettings.Add(("http.extraheader", $"AUTHORIZATION: {strAuthorizationHeader}"));
 
 		startInfo.Environment["GIT_CONFIG_COUNT"] = liSettings.Count.ToString();
 
@@ -201,10 +183,7 @@ internal sealed class GitCommandRunner
 	{
 		try
 		{
-			if(!process.HasExited)
-			{
-				process.Kill(entireProcessTree: true);
-			}
+			if(!process.HasExited) process.Kill(entireProcessTree: true);
 		}
 		catch(Exception ex) when(ex is InvalidOperationException or NotSupportedException or System.ComponentModel.Win32Exception)
 		{

@@ -100,6 +100,28 @@ for my $file (@files) {
             report($file, $n, "`var` used - write the explicit type");
         }
 
+        # An anonymous object takes its property names from the variable, so a renamed
+        # local silently rewrites the JSON a caller sends. This compiles and only fails
+        # against the live service, so shorthand carrying a type prefix is always a bug.
+        if (!$is_comment && $line =~ /new\s*\{/) {
+            # Scan only what is between the braces. Method arguments on the same line
+            # are not properties, and flagging them buries the real finding.
+            my $scan = $line;
+
+            while ($scan =~ /new\s*\{([^{}]*)\}/) {
+                my $body = $1;
+                $scan =~ s/new\s*\{[^{}]*\}/\x02/;
+
+                # A shorthand property is a bare identifier between commas; anything
+                # with an `=` has been named explicitly and is safe.
+                while ($body =~ /(?:^|,)\s*((?:str|li|[nlbo])[A-Z]\w*)\s*(?=,|$)/g) {
+                    report($file, $n,
+                        "anonymous object uses shorthand '$1' - the JSON property will be " .
+                        "named '$1'; name it explicitly instead");
+                }
+            }
+        }
+
         # Constants are UPPER_SNAKE_CASE regardless of visibility.
         if (!$is_comment && $line =~ /\bconst\s+[\w<>?\[\]]+\s+(\w+)\s*=/) {
             my $const_name = $1;

@@ -195,10 +195,7 @@ internal static class RestSupport
 	/// <summary>Pulls the human-readable message out of a GitHub or Azure DevOps error body.</summary>
 	private static string ExtractMessage(string strBody)
 	{
-		if(!LooksLikeJson(strBody) || strBody.AsSpan().TrimStart().Length == 0)
-		{
-			return "no details returned";
-		}
+		if(!LooksLikeJson(strBody) || strBody.AsSpan().TrimStart().Length == 0) return "no details returned";
 
 		try
 		{

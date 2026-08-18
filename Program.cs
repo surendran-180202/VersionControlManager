@@ -104,10 +104,7 @@ internal static class Program
 			ConsoleLog.Info($"Notes:     {migrationResult.NoteCount}");
 		}
 
-		if(migrationResult.DefaultBranch is not null)
-		{
-			ConsoleLog.Info($"Default:   {migrationResult.DefaultBranch}");
-		}
+		if(migrationResult.DefaultBranch is not null) ConsoleLog.Info($"Default:   {migrationResult.DefaultBranch}");
 
 		ConsoleLog.Blank();
 		ConsoleLog.Info($"Open it at {migrationResult.TargetUrl}");

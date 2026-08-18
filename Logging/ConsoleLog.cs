@@ -33,10 +33,7 @@ internal static class ConsoleLog
 	/// </summary>
 	public static void RegisterSecret(string? strSecret, string? strUserName = null)
 	{
-		if(string.IsNullOrEmpty(strSecret) || strSecret.Length < MINIMUM_SECRET_LENGTH)
-		{
-			return;
-		}
+		if(string.IsNullOrEmpty(strSecret) || strSecret.Length < MINIMUM_SECRET_LENGTH) return;
 
 		Add(strSecret);
 		Add(Convert.ToBase64String(Encoding.UTF8.GetBytes($":{strSecret}")));
@@ -45,10 +42,7 @@ internal static class ConsoleLog
 
 	public static string Redact(string? strText)
 	{
-		if(string.IsNullOrEmpty(strText))
-		{
-			return string.Empty;
-		}
+		if(string.IsNullOrEmpty(strText)) return string.Empty;
 
 		// Longest first, so a secret containing another secret is fully masked.
 		foreach(string strSecret in Secrets.OrderByDescending(s => s.Length))
@@ -80,10 +74,7 @@ internal static class ConsoleLog
 
 	public static void Detail(string strMessage)
 	{
-		if(Verbose)
-		{
-			Write(ConsoleColor.DarkGray, $"        {Redact(strMessage)}");
-		}
+		if(Verbose) Write(ConsoleColor.DarkGray, $"        {Redact(strMessage)}");
 	}
 
 	/// <summary>Live output relayed from a child git process.</summary>
@@ -116,10 +107,7 @@ internal static class ConsoleLog
 	#region Privates
 	private static void Add(string strValue)
 	{
-		if(!Secrets.Contains(strValue, StringComparer.Ordinal))
-		{
-			Secrets.Add(strValue);
-		}
+		if(!Secrets.Contains(strValue, StringComparer.Ordinal)) Secrets.Add(strValue);
 	}
 
 	private static void Write(ConsoleColor colour, string strMessage, bool bToError = false)

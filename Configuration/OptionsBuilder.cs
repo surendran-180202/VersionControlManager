@@ -67,10 +67,7 @@ internal static class OptionsBuilder
 
 		void Text(string strLabel, string strCliName, Func<string> get, Action<string> set)
 		{
-			if(get().Length > 0)
-			{
-				return;
-			}
+			if(get().Length > 0) return;
 
 			if(migrationOptions.NonInteractive)
 			{
@@ -272,10 +269,7 @@ internal static class OptionsBuilder
 
 			foreach(JsonProperty property in migration.EnumerateObject())
 			{
-				if(property.Value.ValueKind == JsonValueKind.String)
-				{
-					result[property.Name] = property.Value.GetString() ?? string.Empty;
-				}
+				if(property.Value.ValueKind == JsonValueKind.String) result[property.Name] = property.Value.GetString() ?? string.Empty;
 			}
 		}
 		catch(Exception ex) when(ex is JsonException or IOException or UnauthorizedAccessException)

@@ -10,10 +10,7 @@ internal static class Describe
 	#region Publics
 	public static string Bytes(long lValue)
 	{
-		if(lValue <= 0)
-		{
-			return "0 bytes";
-		}
+		if(lValue <= 0) return "0 bytes";
 
 		double size = lValue;
 		int nUnit = 0;

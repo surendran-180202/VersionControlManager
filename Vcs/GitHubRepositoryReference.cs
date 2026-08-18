@@ -27,10 +27,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
 	{
 		string strInput = (strValue ?? string.Empty).Trim().Trim('"');
 
-		if(strInput.Length == 0)
-		{
-			throw Invalid(strInput, "the value is empty");
-		}
+		if(strInput.Length == 0) throw Invalid(strInput, "the value is empty");
 
 		string strHost;
 		string strPath;
@@ -78,10 +75,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
 		string strOwner = liSegments[0];
 		string strName = StripGitSuffix(liSegments[1]);
 
-		if(strOwner.Length == 0 || strName.Length == 0)
-		{
-			throw Invalid(strInput, "the owner or repository name is empty");
-		}
+		if(strOwner.Length == 0 || strName.Length == 0) throw Invalid(strInput, "the owner or repository name is empty");
 
 		return new GitHubRepositoryReference(strHost, strOwner, strName, BuildApiBaseUrl(strHost));
 	}
@@ -92,10 +86,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
 	{
 		strHost = strHost.Trim().TrimEnd('.');
 
-		if(strHost.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
-		{
-			strHost = strHost[4..];
-		}
+		if(strHost.StartsWith("www.", StringComparison.OrdinalIgnoreCase)) strHost = strHost[4..];
 
 		return strHost;
 	}

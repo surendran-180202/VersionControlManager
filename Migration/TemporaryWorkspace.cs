@@ -94,10 +94,7 @@ internal sealed class TemporaryWorkspace : IDisposable
 			{
 				FileAttributes attributes = File.GetAttributes(strFile);
 
-				if(attributes.HasFlag(FileAttributes.ReadOnly))
-				{
-					File.SetAttributes(strFile, attributes & ~FileAttributes.ReadOnly);
-				}
+				if(attributes.HasFlag(FileAttributes.ReadOnly)) File.SetAttributes(strFile, attributes & ~FileAttributes.ReadOnly);
 			}
 
 			Directory.Delete(strPath, recursive: true);

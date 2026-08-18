@@ -14,17 +14,11 @@ internal static class ConsolePrompt
 			Console.Write($"  {strLabel}: ");
 			string? strValue = Console.ReadLine();
 
-			if(strValue is null)
-			{
-				return null;   // stdin closed
-			}
+			if(strValue is null) return null;   // stdin closed
 
 			strValue = strValue.Trim();
 
-			if(strValue.Length > 0)
-			{
-				return strValue;
-			}
+			if(strValue.Length > 0) return strValue;
 
 			Console.WriteLine("  A value is required.");
 		}
@@ -36,10 +30,7 @@ internal static class ConsolePrompt
 	/// </summary>
 	public static string? ReadSecret(string strLabel)
 	{
-		if(Console.IsInputRedirected)
-		{
-			return ReadRequired(strLabel);
-		}
+		if(Console.IsInputRedirected) return ReadRequired(strLabel);
 
 		while(true)
 		{
@@ -79,10 +70,7 @@ internal static class ConsolePrompt
 				}
 			}
 
-			if(builder.Length > 0)
-			{
-				return builder.ToString();
-			}
+			if(builder.Length > 0) return builder.ToString();
 
 			Console.WriteLine("  A value is required.");
 		}

@@ -94,6 +94,31 @@ The script also handles four cases that each cost a broken build otherwise:
   *other files*. After renaming a parameter, grep the solution for `oldName:` and rename there
   too — the compiler will tell you, but only after you have moved on.
 
+### The trap the compiler cannot catch
+
+An **anonymous object takes its property names from the variables**, so renaming a local
+silently rewrites the payload a caller sends:
+
+```csharp
+new { name, project = new { id = projectId } }        // {"name": "...", "project": {...}}
+new { strName, project = new { id = strProjectId } }  // {"strName": "..."} - wrong
+```
+
+Both compile. Both pass review. The second fails only when it reaches the live service, because
+the API is looking for `name`. Nothing in the build catches it, and a test that mocks the
+transport will not either.
+
+Name the properties explicitly wherever a rename could reach them:
+
+```csharp
+new { name = strName, project = new { id = strProjectId } }
+```
+
+`check-style.pl` flags shorthand properties carrying a type prefix, since a prefixed shorthand
+is proof a rename has been through. The same reasoning applies anywhere an identifier becomes
+data instead of staying code — `nameof`, serializer attributes that fall back to the member
+name, and anything resolved by reflection.
+
 ### Collisions
 
 Two variables of the same type in one scope cannot both take the plain prefixed name, and a
@@ -203,6 +228,28 @@ Both invocations have traps that produce confusing failures:
 Both commands exit 0 on success. If a run exits 0 but nothing changed, suspect the arguments
 before concluding the code was already clean.
 
+### Guard clauses
+
+A braced `if` whose body is a single statement collapses to one line:
+
+```csharp
+if(strValue is null) return null;
+if(!gitResult.Success) return strUrl;
+```
+
+`dotnet format` will not do this — removing braces is a code change, not formatting — so use
+`scripts/inline-guards.pl`, which only touches the unambiguous case: exactly one statement, on
+one line, with no `else` following and nothing collapsed past a width limit.
+
+```bash
+perl <skill>/scripts/inline-guards.pl --dry-run .    # always look first
+perl <skill>/scripts/inline-guards.pl .
+```
+
+Dropping braces is a genuine trade-off: it reads well for early-return guards and badly for
+anything else, and a guard that later grows a second statement must get its braces back. That
+is why the script is narrow rather than clever — a reviewer should see that change happen.
+
 ## Verify
 
 Run `scripts/check-style.pl` over the source files. It checks the invariants this skill is
@@ -213,7 +260,8 @@ perl <skill>/scripts/check-style.pl src/**/*.cs      # or a directory, which it 
 ```
 
 It reports: any `var` left, constants not in UPPER_SNAKE_CASE, locals whose prefix does not
-match their type, unbalanced `#region`/`#endregion`, blank lines against a region
+match their type, anonymous objects whose shorthand property would leak a renamed variable
+into a payload, unbalanced `#region`/`#endregion`, blank lines against a region
 tag, region names outside the allowed set, regions out of canonical order, class-level members
 sitting outside any region, and mixed tab/space indentation.
 

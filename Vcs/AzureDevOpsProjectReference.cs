@@ -40,21 +40,12 @@ internal sealed record AzureDevOpsProjectReference(
 	{
 		string strInput = (strValue ?? string.Empty).Trim().Trim('"');
 
-		if(strInput.Length == 0)
-		{
-			throw Invalid(strInput, "the value is empty");
-		}
+		if(strInput.Length == 0) throw Invalid(strInput, "the value is empty");
 
 		// Accept a bare host so users can paste from a browser without the scheme.
-		if(!strInput.Contains("://", StringComparison.Ordinal))
-		{
-			strInput = $"https://{strInput}";
-		}
+		if(!strInput.Contains("://", StringComparison.Ordinal)) strInput = $"https://{strInput}";
 
-		if(!Uri.TryCreate(strInput, UriKind.Absolute, out Uri? uri))
-		{
-			throw Invalid(strInput, "it is not a well-formed URL");
-		}
+		if(!Uri.TryCreate(strInput, UriKind.Absolute, out Uri? uri)) throw Invalid(strInput, "it is not a well-formed URL");
 
 		// Drop any userinfo -- the clone dialog emits https://org@dev.azure.com/... and we
 		// authenticate by header, so a username in the URL only invites a credential prompt.
@@ -65,10 +56,7 @@ internal sealed record AzureDevOpsProjectReference(
 		// Legacy {org}.visualstudio.com permanently redirects to dev.azure.com/{org}, and
 		// .NET strips the Authorization header when a redirect crosses origins -- which would
 		// surface as a puzzling authentication failure. Use the canonical host from the start.
-		if(IsLegacyHost(uri.Host))
-		{
-			strOrigin = $"https://dev.azure.com/{Uri.EscapeDataString(uri.Host[..uri.Host.IndexOf('.')])}";
-		}
+		if(IsLegacyHost(uri.Host)) strOrigin = $"https://dev.azure.com/{Uri.EscapeDataString(uri.Host[..uri.Host.IndexOf('.')])}";
 
 		string[] liSegments = [.. uri.AbsolutePath
 			.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -152,10 +140,7 @@ internal sealed record AzureDevOpsProjectReference(
 
 	private static string ResolveOrganization(string strHost, string[] liCollectionSegments)
 	{
-		if(IsLegacyHost(strHost))
-		{
-			return strHost[..strHost.IndexOf('.')];
-		}
+		if(IsLegacyHost(strHost)) return strHost[..strHost.IndexOf('.')];
 
 		return liCollectionSegments.Length > 0 ? liCollectionSegments[^1] : strHost;
 	}

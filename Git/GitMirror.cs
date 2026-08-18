@@ -122,15 +122,9 @@ internal sealed class GitMirror(GitCommandRunner git)
 			liArguments.Add("refs/heads/*:refs/heads/*");
 		}
 
-		if(mirrorSummary.Tags.Count > 0)
-		{
-			liArguments.Add("refs/tags/*:refs/tags/*");
-		}
+		if(mirrorSummary.Tags.Count > 0) liArguments.Add("refs/tags/*:refs/tags/*");
 
-		if(bIncludeNotes && mirrorSummary.Notes.Count > 0)
-		{
-			liArguments.Add("refs/notes/*:refs/notes/*");
-		}
+		if(bIncludeNotes && mirrorSummary.Notes.Count > 0) liArguments.Add("refs/notes/*:refs/notes/*");
 
 		GitResult gitResult = await git.RunAsync(
 			liArguments,

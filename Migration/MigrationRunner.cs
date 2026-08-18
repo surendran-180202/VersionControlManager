@@ -87,10 +87,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
 			$"Cloned {mirrorSummary.CommitCount:N0} commits, {mirrorSummary.Branches.Count} branches, " +
 			$"{mirrorSummary.Tags.Count} tags ({Describe.Bytes(mirrorSummary.SizeOnDiskBytes)} on disk)");
 
-		if(mirrorSummary.Notes.Count > 0)
-		{
-			ConsoleLog.Info($"Notes refs: {mirrorSummary.Notes.Count}");
-		}
+		if(mirrorSummary.Notes.Count > 0) ConsoleLog.Info($"Notes refs: {mirrorSummary.Notes.Count}");
 
 		// --- 6 ------------------------------------------------------------------
 		ConsoleLog.Step(6, TOTAL_STEPS, "Pushing history to Azure DevOps");
@@ -316,10 +313,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
 			liProblems.Add($"{mirrorSummary.Branches.Count - nTargetBranches} branch(es) missing");
 		}
 
-		if(nTargetTags < mirrorSummary.Tags.Count)
-		{
-			liProblems.Add($"{mirrorSummary.Tags.Count - nTargetTags} tag(s) missing");
-		}
+		if(nTargetTags < mirrorSummary.Tags.Count) liProblems.Add($"{mirrorSummary.Tags.Count - nTargetTags} tag(s) missing");
 
 		if(liProblems.Count > 0)
 		{
