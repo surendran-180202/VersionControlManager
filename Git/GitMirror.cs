@@ -12,7 +12,7 @@ internal sealed record GitRef(string Name, string ObjectType)
 
     public bool IsNote => Name.StartsWith("refs/notes/", StringComparison.Ordinal);
 
-    public string ShortName => Name.Split('/', 3) is [_, _, var rest] ? rest : Name;
+    public string ShortName => Name.Split('/', 3) is [_, _, string rest] ? rest : Name;
 }
 
 /// <summary>What the mirror clone contains, used for reporting and verification.</summary>
@@ -42,7 +42,7 @@ internal sealed class GitMirror(GitCommandRunner git)
         string authorizationHeader,
         CancellationToken cancellationToken)
     {
-        var result = await git.RunAsync(
+        GitResult result = await git.RunAsync(
             ["clone", "--mirror", "--progress", cloneUrl, destination],
             authorizationHeader: authorizationHeader,
             relayProgress: true,
@@ -59,7 +59,7 @@ internal sealed class GitMirror(GitCommandRunner git)
 
     public async Task<MirrorSummary> SummariseAsync(string repositoryPath, CancellationToken cancellationToken)
     {
-        var refsResult = await git.RunAsync(
+        GitResult refsResult = await git.RunAsync(
             ["for-each-ref", "--format=%(refname)%09%(objecttype)"],
             repositoryPath,
             cancellationToken: cancellationToken);
@@ -71,24 +71,24 @@ internal sealed class GitMirror(GitCommandRunner git)
                 $"Could not list references in the mirror: {refsResult.FailureText}");
         }
 
-        var refs = refsResult.StandardOutput
+        GitRef[] refs = refsResult.StandardOutput
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(line => line.Split('\t'))
             .Where(parts => parts.Length == 2)
             .Select(parts => new GitRef(parts[0], parts[1]))
             .ToArray();
 
-        var commitCount = 0;
+        int commitCount = 0;
 
         if (refs.Length > 0)
         {
-            var countResult = await git.RunAsync(
+            GitResult countResult = await git.RunAsync(
                 ["rev-list", "--all", "--count"],
                 repositoryPath,
                 cancellationToken: cancellationToken);
 
             if (countResult.Success
-                && int.TryParse(countResult.StandardOutput.Trim(), out var parsed))
+                && int.TryParse(countResult.StandardOutput.Trim(), out int parsed))
             {
                 commitCount = parsed;
             }
@@ -111,7 +111,7 @@ internal sealed class GitMirror(GitCommandRunner git)
         string authorizationHeader,
         CancellationToken cancellationToken)
     {
-        var arguments = new List<string> { "push", "--porcelain", "--progress", targetUrl };
+        List<string> arguments = new List<string> { "push", "--porcelain", "--progress", targetUrl };
 
         if (summary.Branches.Count > 0)
         {
@@ -128,7 +128,7 @@ internal sealed class GitMirror(GitCommandRunner git)
             arguments.Add("refs/notes/*:refs/notes/*");
         }
 
-        var result = await git.RunAsync(
+        GitResult result = await git.RunAsync(
             arguments,
             repositoryPath,
             authorizationHeader,
@@ -151,7 +151,7 @@ internal sealed class GitMirror(GitCommandRunner git)
     /// </summary>
     public async Task<bool> HasLfsContentAsync(string repositoryPath, CancellationToken cancellationToken)
     {
-        var result = await git.RunAsync(
+        GitResult result = await git.RunAsync(
             ["cat-file", "-p", "HEAD:.gitattributes"],
             repositoryPath,
             cancellationToken: cancellationToken);
@@ -173,7 +173,7 @@ internal sealed class GitMirror(GitCommandRunner git)
         string targetAuthorizationHeader,
         CancellationToken cancellationToken)
     {
-        var fetch = await git.RunAsync(
+        GitResult fetch = await git.RunAsync(
             ["lfs", "fetch", "--all", "origin"],
             repositoryPath,
             sourceAuthorizationHeader,
@@ -187,7 +187,7 @@ internal sealed class GitMirror(GitCommandRunner git)
                 $"Could not fetch Git LFS objects from the source.{Environment.NewLine}{ConsoleLog.Redact(fetch.FailureText)}");
         }
 
-        var push = await git.RunAsync(
+        GitResult push = await git.RunAsync(
             ["lfs", "push", "--all", targetUrl],
             repositoryPath,
             targetAuthorizationHeader,
@@ -205,12 +205,12 @@ internal sealed class GitMirror(GitCommandRunner git)
     /// <summary>The branch the mirror's HEAD points at, e.g. "main". Null if detached.</summary>
     public async Task<string?> GetHeadBranchAsync(string repositoryPath, CancellationToken cancellationToken)
     {
-        var result = await git.RunAsync(
+        GitResult result = await git.RunAsync(
             ["symbolic-ref", "--short", "HEAD"],
             repositoryPath,
             cancellationToken: cancellationToken);
 
-        var value = result.StandardOutput.Trim();
+        string value = result.StandardOutput.Trim();
 
         return result.Success && value.Length > 0 ? value : null;
     }

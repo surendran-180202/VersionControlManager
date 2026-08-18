@@ -19,7 +19,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
     /// </summary>
     public static GitHubRepositoryReference Parse(string value)
     {
-        var input = (value ?? string.Empty).Trim().Trim('"');
+        string input = (value ?? string.Empty).Trim().Trim('"');
 
         if (input.Length == 0)
         {
@@ -30,7 +30,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
         string path;
 
         // git@github.com:owner/repo.git  and  ssh://git@github.com/owner/repo.git
-        var scpMatch = Regex.Match(input, @"^(?:ssh://)?[^@/]+@(?<host>[^:/]+)[:/](?<path>.+)$");
+        Match scpMatch = Regex.Match(input, @"^(?:ssh://)?[^@/]+@(?<host>[^:/]+)[:/](?<path>.+)$");
 
         if (scpMatch.Success && !input.StartsWith("http", StringComparison.OrdinalIgnoreCase))
         {
@@ -39,7 +39,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
         }
         else if (input.Contains("://", StringComparison.Ordinal))
         {
-            if (!Uri.TryCreate(input, UriKind.Absolute, out var uri))
+            if (!Uri.TryCreate(input, UriKind.Absolute, out Uri? uri))
             {
                 throw Invalid(input, "it is not a well-formed URL");
             }
@@ -60,7 +60,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
 
         host = NormaliseHost(host);
 
-        var segments = path
+        string[] segments = path
             .Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(Uri.UnescapeDataString)
             .ToArray();
@@ -70,8 +70,8 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
             throw Invalid(input, "no owner/repository pair was found in the path");
         }
 
-        var owner = segments[0];
-        var name = StripGitSuffix(segments[1]);
+        string owner = segments[0];
+        string name = StripGitSuffix(segments[1]);
 
         if (owner.Length == 0 || name.Length == 0)
         {

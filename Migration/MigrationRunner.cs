@@ -31,53 +31,54 @@ internal sealed class MigrationRunner(MigrationOptions options)
 
     public async Task<MigrationResult> RunAsync(CancellationToken cancellationToken)
     {
-        var source = GitHubRepositoryReference.Parse(options.GitHubUrl);
-        var target = AzureDevOpsProjectReference.Parse(options.AzureDevOpsUrl);
+        GitHubRepositoryReference source = GitHubRepositoryReference.Parse(options.GitHubUrl);
+        AzureDevOpsProjectReference target = AzureDevOpsProjectReference.Parse(options.AzureDevOpsUrl);
 
-        var gitHubAuth = RestSupport.BasicHeaderValue(options.GitHubUserName, options.GitHubPassword);
-        var azureAuth = RestSupport.BasicHeaderValue(options.AzureDevOpsUserName, options.AzureDevOpsPassword);
+        string gitHubAuth = RestSupport.BasicHeaderValue(options.GitHubUserName, options.GitHubPassword);
+        string azureAuth = RestSupport.BasicHeaderValue(options.AzureDevOpsUserName, options.AzureDevOpsPassword);
 
-        var git = new GitCommandRunner();
-        var mirror = new GitMirror(git);
+        GitCommandRunner git = new GitCommandRunner();
+        GitMirror mirror = new GitMirror(git);
 
-        using var gitHub = new GitHubClient(
+        using GitHubClient gitHub = new GitHubClient(
             RestSupport.CreateClient(options.GitHubUserName, options.GitHubPassword), source);
-        using var azure = new AzureDevOpsClient(
+        using AzureDevOpsClient azure = new AzureDevOpsClient(
             RestSupport.CreateClient(options.AzureDevOpsUserName, options.AzureDevOpsPassword), target);
 
         // --- 1 ------------------------------------------------------------------
         ConsoleLog.Step(1, TotalSteps, "Checking prerequisites");
-        var gitVersion = await git.GetVersionAsync(cancellationToken);
+        string gitVersion = await git.GetVersionAsync(cancellationToken);
         ConsoleLog.Success($"Found {gitVersion}");
 
         // --- 2 ------------------------------------------------------------------
         ConsoleLog.Step(2, TotalSteps, $"Reading source repository {source}");
-        var sourceInfo = await gitHub.GetRepositoryAsync(cancellationToken);
+        GitHubRepositoryInfo sourceInfo = await gitHub.GetRepositoryAsync(cancellationToken);
         ConsoleLog.Success($"{sourceInfo.FullName} ({(sourceInfo.IsPrivate ? "private" : "public")})");
         ConsoleLog.Info($"Default branch: {sourceInfo.DefaultBranch ?? "(none)"}");
         ConsoleLog.Info($"Reported size:  {Describe.Kilobytes(sourceInfo.SizeKilobytes)}");
 
         // --- 3 ------------------------------------------------------------------
         ConsoleLog.Step(3, TotalSteps, $"Reading target project {target}");
-        var projectInfo = await azure.GetProjectAsync(cancellationToken);
+        AzureProjectInfo projectInfo = await azure.GetProjectAsync(cancellationToken);
         ConsoleLog.Success($"Project '{projectInfo.Name}' found in {target.CollectionUrl}");
 
         // --- 4 ------------------------------------------------------------------
-        var repositoryName = ResolveTargetRepositoryName(source, target);
+        string repositoryName = ResolveTargetRepositoryName(source, target);
         ConsoleLog.Step(4, TotalSteps, $"Preparing target repository '{repositoryName}'");
 
-        var (repository, created) = await PrepareTargetRepositoryAsync(
+        (AzureRepositoryInfo repository, bool created) = await PrepareTargetRepositoryAsync(
             azure, repositoryName, projectInfo.Id, cancellationToken);
 
         // --- 5 ------------------------------------------------------------------
         ConsoleLog.Step(5, TotalSteps, "Cloning full history from GitHub");
 
-        using var workspace = TemporaryWorkspace.Create(options.WorkingDirectory, repositoryName, options.KeepWorkingCopy);
+        using TemporaryWorkspace workspace = TemporaryWorkspace.Create(
+            options.WorkingDirectory, repositoryName, options.KeepWorkingCopy);
         ConsoleLog.Info($"Mirror: {workspace.MirrorPath}");
 
         await mirror.CloneAsync(source.CloneUrl, workspace.MirrorPath, gitHubAuth, cancellationToken);
 
-        var summary = await mirror.SummariseAsync(workspace.MirrorPath, cancellationToken);
+        MirrorSummary summary = await mirror.SummariseAsync(workspace.MirrorPath, cancellationToken);
 
         ConsoleLog.Success(
             $"Cloned {summary.CommitCount:N0} commits, {summary.Branches.Count} branches, " +
@@ -103,7 +104,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
 
         // --- 7 ------------------------------------------------------------------
         ConsoleLog.Step(7, TotalSteps, "Setting the default branch");
-        var defaultBranch = await ApplyDefaultBranchAsync(
+        string? defaultBranch = await ApplyDefaultBranchAsync(
             azure, mirror, workspace.MirrorPath, repository, sourceInfo, summary, cancellationToken);
 
         // --- 8 ------------------------------------------------------------------
@@ -144,11 +145,12 @@ internal sealed class MigrationRunner(MigrationOptions options)
         string projectId,
         CancellationToken cancellationToken)
     {
-        var existing = await azure.FindRepositoryAsync(repositoryName, cancellationToken);
+        AzureRepositoryInfo? existing = await azure.FindRepositoryAsync(repositoryName, cancellationToken);
 
         if (existing is null)
         {
-            var created = await azure.CreateRepositoryAsync(repositoryName, projectId, cancellationToken);
+            AzureRepositoryInfo created =
+                await azure.CreateRepositoryAsync(repositoryName, projectId, cancellationToken);
             ConsoleLog.Success($"Created repository '{created.Name}'");
 
             return (created, true);
@@ -156,7 +158,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
 
         ConsoleLog.Info($"Repository '{existing.Name}' already exists");
 
-        var refs = await azure.ListRefsAsync(existing.Id, cancellationToken);
+        IReadOnlyList<string> refs = await azure.ListRefsAsync(existing.Id, cancellationToken);
 
         if (refs.Count == 0)
         {
@@ -194,7 +196,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
         await mirror.PushAsync(
             mirrorPath, remoteUrl, summary, options.IncludeNotes, azureAuth, cancellationToken);
 
-        var pushed = $"{summary.Branches.Count} branches and {summary.Tags.Count} tags";
+        string pushed = $"{summary.Branches.Count} branches and {summary.Tags.Count} tags";
 
         if (options.IncludeNotes && summary.Notes.Count > 0)
         {
@@ -256,7 +258,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
         MirrorSummary summary,
         CancellationToken cancellationToken)
     {
-        var branchName = sourceInfo.DefaultBranch
+        string? branchName = sourceInfo.DefaultBranch
                          ?? await mirror.GetHeadBranchAsync(mirrorPath, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(branchName))
@@ -265,7 +267,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
             return null;
         }
 
-        var refName = $"refs/heads/{branchName}";
+        string refName = $"refs/heads/{branchName}";
 
         if (!summary.Branches.Any(b => b.Name.Equals(refName, StringComparison.Ordinal)))
         {
@@ -295,14 +297,14 @@ internal sealed class MigrationRunner(MigrationOptions options)
         MirrorSummary summary,
         CancellationToken cancellationToken)
     {
-        var targetRefs = await azure.ListRefsAsync(repository.Id, cancellationToken);
+        IReadOnlyList<string> targetRefs = await azure.ListRefsAsync(repository.Id, cancellationToken);
 
-        var targetBranches = targetRefs.Count(r => r.StartsWith("refs/heads/", StringComparison.Ordinal));
-        var targetTags = targetRefs.Count(r => r.StartsWith("refs/tags/", StringComparison.Ordinal));
+        int targetBranches = targetRefs.Count(r => r.StartsWith("refs/heads/", StringComparison.Ordinal));
+        int targetTags = targetRefs.Count(r => r.StartsWith("refs/tags/", StringComparison.Ordinal));
 
         ConsoleLog.Info($"Azure DevOps reports {targetBranches} branches and {targetTags} tags.");
 
-        var problems = new List<string>();
+        List<string> problems = new List<string>();
 
         if (targetBranches < summary.Branches.Count)
         {

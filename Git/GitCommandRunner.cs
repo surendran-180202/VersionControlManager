@@ -34,7 +34,7 @@ internal sealed class GitCommandRunner
     {
         try
         {
-            var result = await RunAsync(["--version"], cancellationToken: cancellationToken);
+            GitResult result = await RunAsync(["--version"], cancellationToken: cancellationToken);
 
             if (!result.Success)
             {
@@ -57,7 +57,7 @@ internal sealed class GitCommandRunner
     {
         try
         {
-            var result = await RunAsync([subcommand, "version"], cancellationToken: cancellationToken);
+            GitResult result = await RunAsync([subcommand, "version"], cancellationToken: cancellationToken);
             return result.Success;
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or FileNotFoundException)
@@ -77,7 +77,7 @@ internal sealed class GitCommandRunner
         bool relayProgress = false,
         CancellationToken cancellationToken = default)
     {
-        var startInfo = new ProcessStartInfo
+        ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = ExecutableName,
             WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
@@ -88,7 +88,7 @@ internal sealed class GitCommandRunner
             CreateNoWindow = true,
         };
 
-        foreach (var argument in arguments)
+        foreach (string argument in arguments)
         {
             startInfo.ArgumentList.Add(argument);
         }
@@ -97,10 +97,10 @@ internal sealed class GitCommandRunner
 
         ConsoleLog.Detail($"git {string.Join(' ', arguments)}");
 
-        using var process = new Process { StartInfo = startInfo };
+        using Process process = new Process { StartInfo = startInfo };
 
-        var standardOutput = new StringBuilder();
-        var standardError = new StringBuilder();
+        StringBuilder standardOutput = new StringBuilder();
+        StringBuilder standardError = new StringBuilder();
 
         // Git writes progress to stderr, terminated with CR. The line-based reader used by
         // these events treats CR as a line break, so progress arrives as it is produced.
@@ -168,7 +168,7 @@ internal sealed class GitCommandRunner
         // Stable, parseable output regardless of the user's locale.
         startInfo.Environment["LC_ALL"] = "C";
 
-        var settings = new List<(string Key, string Value)>
+        List<(string Key, string Value)> settings = new List<(string Key, string Value)>
         {
             // Empty value resets the helper list, so Git Credential Manager cannot pop up a
             // dialog or substitute a cached identity for the one we were given.
@@ -183,7 +183,7 @@ internal sealed class GitCommandRunner
 
         startInfo.Environment["GIT_CONFIG_COUNT"] = settings.Count.ToString();
 
-        for (var i = 0; i < settings.Count; i++)
+        for (int i = 0; i < settings.Count; i++)
         {
             startInfo.Environment[$"GIT_CONFIG_KEY_{i}"] = settings[i].Key;
             startInfo.Environment[$"GIT_CONFIG_VALUE_{i}"] = settings[i].Value;

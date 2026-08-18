@@ -1,3 +1,4 @@
+using System.Text.Json;
 using VersionControlManager.Migration;
 using VersionControlManager.Vcs;
 
@@ -21,13 +22,13 @@ internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference 
 
     public async Task<GitHubRepositoryInfo> GetRepositoryAsync(CancellationToken cancellationToken)
     {
-        var url = $"{repository.ApiBaseUrl}/repos/" +
-                  $"{Uri.EscapeDataString(repository.Owner)}/{Uri.EscapeDataString(repository.Name)}";
+        string url = $"{repository.ApiBaseUrl}/repos/" +
+                     $"{Uri.EscapeDataString(repository.Owner)}/{Uri.EscapeDataString(repository.Name)}";
 
-        using var request = RestSupport.Json(HttpMethod.Get, url);
+        using HttpRequestMessage request = RestSupport.Json(HttpMethod.Get, url);
         request.Headers.Accept.ParseAdd("application/vnd.github+json");
 
-        using var document = await RestSupport.SendAllowingNotFoundAsync(
+        using JsonDocument? document = await RestSupport.SendAllowingNotFoundAsync(
             client, request, ServiceName, ExitCode.SourceError, cancellationToken);
 
         if (document is null)
@@ -38,17 +39,17 @@ internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference 
                 "Check the URL for typos, and that the token has access if the repository is private.");
         }
 
-        var root = document.RootElement;
+        JsonElement root = document.RootElement;
 
-        var size = root.TryGetProperty("size", out var sizeElement)
-                   && sizeElement.TryGetInt64(out var sizeValue)
+        long size = root.TryGetProperty("size", out JsonElement sizeElement)
+                   && sizeElement.TryGetInt64(out long sizeValue)
             ? sizeValue
             : 0;
 
         return new GitHubRepositoryInfo(
             RestSupport.StringOrNull(root, "full_name") ?? repository.ToString(),
             RestSupport.StringOrNull(root, "default_branch"),
-            root.TryGetProperty("private", out var isPrivate) && isPrivate.ValueKind == System.Text.Json.JsonValueKind.True,
+            root.TryGetProperty("private", out JsonElement isPrivate) && isPrivate.ValueKind == JsonValueKind.True,
             size == 0,
             size);
     }

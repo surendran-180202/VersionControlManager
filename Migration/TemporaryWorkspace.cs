@@ -25,11 +25,11 @@ internal sealed class TemporaryWorkspace : IDisposable
 
     public static TemporaryWorkspace Create(string? parentDirectory, string repositoryName, bool keep)
     {
-        var parent = string.IsNullOrWhiteSpace(parentDirectory)
+        string parent = string.IsNullOrWhiteSpace(parentDirectory)
             ? Path.GetTempPath()
             : parentDirectory.Trim();
 
-        var root = Path.Combine(
+        string root = Path.Combine(
             parent,
             $"vcm-{Sanitise(repositoryName)}-{DateTime.Now:yyyyMMdd-HHmmss}");
 
@@ -52,7 +52,7 @@ internal sealed class TemporaryWorkspace : IDisposable
     /// <summary>Strips characters that are not valid in a path segment on any host OS.</summary>
     private static string Sanitise(string name)
     {
-        var cleaned = new string([.. name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '-' : c)]);
+        string cleaned = new string([.. name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '-' : c)]);
 
         return cleaned.Trim('.', ' ') is { Length: > 0 } result ? result : "repository";
     }
@@ -81,9 +81,9 @@ internal sealed class TemporaryWorkspace : IDisposable
 
         try
         {
-            foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+            foreach (string file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
             {
-                var attributes = File.GetAttributes(file);
+                FileAttributes attributes = File.GetAttributes(file);
 
                 if (attributes.HasFlag(FileAttributes.ReadOnly))
                 {

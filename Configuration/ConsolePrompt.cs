@@ -11,7 +11,7 @@ internal static class ConsolePrompt
         while (true)
         {
             Console.Write($"  {label}: ");
-            var value = Console.ReadLine();
+            string? value = Console.ReadLine();
 
             if (value is null)
             {
@@ -43,11 +43,11 @@ internal static class ConsolePrompt
         while (true)
         {
             Console.Write($"  {label}: ");
-            var builder = new StringBuilder();
+            StringBuilder builder = new StringBuilder();
 
             while (true)
             {
-                var key = Console.ReadKey(intercept: true);
+                ConsoleKeyInfo key = Console.ReadKey(intercept: true);
 
                 if (key.Key == ConsoleKey.Enter)
                 {
@@ -90,7 +90,7 @@ internal static class ConsolePrompt
     public static bool Confirm(string question)
     {
         Console.Write($"  {question} [y/N]: ");
-        var answer = Console.ReadLine()?.Trim();
+        string? answer = Console.ReadLine()?.Trim();
 
         return answer is not null
             && (answer.Equals("y", StringComparison.OrdinalIgnoreCase)

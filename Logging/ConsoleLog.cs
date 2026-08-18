@@ -52,7 +52,7 @@ internal static class ConsoleLog
         }
 
         // Longest first, so a secret containing another secret is fully masked.
-        foreach (var secret in Secrets.OrderByDescending(s => s.Length))
+        foreach (string secret in Secrets.OrderByDescending(s => s.Length))
         {
             text = text.Replace(secret, Mask, StringComparison.Ordinal);
         }
@@ -97,7 +97,7 @@ internal static class ConsoleLog
 
     private static void Write(ConsoleColor colour, string message, bool toError = false)
     {
-        var writer = toError ? Console.Error : Console.Out;
+        TextWriter writer = toError ? Console.Error : Console.Out;
 
         if (!UseColour)
         {
@@ -105,7 +105,7 @@ internal static class ConsoleLog
             return;
         }
 
-        var previous = Console.ForegroundColor;
+        ConsoleColor previous = Console.ForegroundColor;
         Console.ForegroundColor = colour;
         writer.WriteLine(message);
         Console.ForegroundColor = previous;

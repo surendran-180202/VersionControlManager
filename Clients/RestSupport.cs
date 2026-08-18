@@ -23,7 +23,7 @@ internal static class RestSupport
 
     public static HttpClient CreateClient(string userName, string secret)
     {
-        var client = new HttpClient(new HttpClientHandler
+        HttpClient client = new HttpClient(new HttpClientHandler
         {
             // We authenticate explicitly on every request; following a redirect that strips
             // or forwards our header would only make failures harder to read.
@@ -97,7 +97,7 @@ internal static class RestSupport
 
         using (response)
         {
-            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            string body = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
             {
@@ -146,7 +146,7 @@ internal static class RestSupport
 
     public static HttpRequestMessage Json(HttpMethod method, string url, object? payload = null)
     {
-        var request = new HttpRequestMessage(method, url);
+        HttpRequestMessage request = new HttpRequestMessage(method, url);
 
         if (payload is not null)
         {
@@ -160,7 +160,7 @@ internal static class RestSupport
     }
 
     public static string? StringOrNull(JsonElement element, string propertyName) =>
-        element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String
+        element.TryGetProperty(propertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String
             ? value.GetString()
             : null;
 
@@ -172,7 +172,7 @@ internal static class RestSupport
 
     private static bool LooksLikeJson(string body)
     {
-        var trimmed = body.AsSpan().TrimStart();
+        ReadOnlySpan<char> trimmed = body.AsSpan().TrimStart();
 
         return trimmed.Length == 0 || trimmed[0] is '{' or '[';
     }
@@ -187,7 +187,7 @@ internal static class RestSupport
 
         try
         {
-            using var document = JsonDocument.Parse(body);
+            using JsonDocument document = JsonDocument.Parse(body);
 
             return StringOrNull(document.RootElement, "message")
                 ?? StringOrNull(document.RootElement, "value")

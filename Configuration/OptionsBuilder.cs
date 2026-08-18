@@ -15,10 +15,10 @@ internal static class OptionsBuilder
 
     public static MigrationOptions Build(string[] args, string settingsFilePath)
     {
-        var cli = ParseArguments(args);
-        var file = ReadSettingsFile(settingsFilePath);
+        Dictionary<string, string?> cli = ParseArguments(args);
+        Dictionary<string, string> file = ReadSettingsFile(settingsFilePath);
 
-        var options = new MigrationOptions
+        MigrationOptions options = new MigrationOptions
         {
             NonInteractive = cli.ContainsKey("non-interactive"),
             Verbose = cli.ContainsKey("verbose"),
@@ -58,7 +58,7 @@ internal static class OptionsBuilder
     /// <summary>Prompts for whatever is still missing, or fails if running non-interactively.</summary>
     private static void FillGaps(MigrationOptions options)
     {
-        var missing = new List<string>();
+        List<string> missing = new List<string>();
 
         void Text(string label, string cliName, Func<string> get, Action<string> set)
         {
@@ -73,7 +73,7 @@ internal static class OptionsBuilder
                 return;
             }
 
-            var value = ConsolePrompt.ReadRequired(label);
+            string? value = ConsolePrompt.ReadRequired(label);
 
             if (value is null)
             {
@@ -96,7 +96,7 @@ internal static class OptionsBuilder
                 return;
             }
 
-            var value = ConsolePrompt.ReadSecret(label);
+            string? value = ConsolePrompt.ReadSecret(label);
 
             if (value is null)
             {
@@ -106,7 +106,7 @@ internal static class OptionsBuilder
             set(value);
         }
 
-        var interactive = !options.NonInteractive && NeedsAnyInput(options);
+        bool interactive = !options.NonInteractive && NeedsAnyInput(options);
 
         if (interactive)
         {
@@ -154,19 +154,19 @@ internal static class OptionsBuilder
         Dictionary<string, string?> cli,
         Dictionary<string, string> file)
     {
-        if (cli.TryGetValue(cliName, out var fromCli) && !string.IsNullOrWhiteSpace(fromCli))
+        if (cli.TryGetValue(cliName, out string? fromCli) && !string.IsNullOrWhiteSpace(fromCli))
         {
             return fromCli.Trim();
         }
 
-        var fromEnvironment = Environment.GetEnvironmentVariable(EnvironmentPrefix + environmentSuffix);
+        string? fromEnvironment = Environment.GetEnvironmentVariable(EnvironmentPrefix + environmentSuffix);
 
         if (!string.IsNullOrWhiteSpace(fromEnvironment))
         {
             return fromEnvironment.Trim();
         }
 
-        if (file.TryGetValue(settingsName, out var fromFile) && !string.IsNullOrWhiteSpace(fromFile))
+        if (file.TryGetValue(settingsName, out string? fromFile) && !string.IsNullOrWhiteSpace(fromFile))
         {
             return fromFile.Trim();
         }
@@ -180,7 +180,7 @@ internal static class OptionsBuilder
     /// </summary>
     private static Dictionary<string, string?> ParseArguments(string[] args)
     {
-        var known = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        HashSet<string> known = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "github-url", "github-user", "github-password",
             "azure-url", "azure-user", "azure-password",
@@ -188,16 +188,16 @@ internal static class OptionsBuilder
             "allow-existing", "lfs", "no-notes", "non-interactive", "verbose", "keep",
         };
 
-        var flags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        HashSet<string> flags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "allow-existing", "lfs", "no-notes", "non-interactive", "verbose", "keep",
         };
 
-        var result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string?> result = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
-        for (var i = 0; i < args.Length; i++)
+        for (int i = 0; i < args.Length; i++)
         {
-            var arg = args[i];
+            string arg = args[i];
 
             if (!arg.StartsWith("--", StringComparison.Ordinal))
             {
@@ -207,10 +207,10 @@ internal static class OptionsBuilder
                     "Run with --help to see the available options.");
             }
 
-            var name = arg[2..];
+            string name = arg[2..];
             string? value = null;
 
-            var equals = name.IndexOf('=');
+            int equals = name.IndexOf('=');
 
             if (equals >= 0)
             {
@@ -256,7 +256,7 @@ internal static class OptionsBuilder
     /// </summary>
     private static Dictionary<string, string> ReadSettingsFile(string path)
     {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, string> result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (!File.Exists(path))
         {
@@ -265,17 +265,17 @@ internal static class OptionsBuilder
 
         try
         {
-            using var document = JsonDocument.Parse(
+            using JsonDocument document = JsonDocument.Parse(
                 File.ReadAllText(path),
                 new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip });
 
-            if (!document.RootElement.TryGetProperty("migration", out var migration)
+            if (!document.RootElement.TryGetProperty("migration", out JsonElement migration)
                 || migration.ValueKind != JsonValueKind.Object)
             {
                 return result;
             }
 
-            foreach (var property in migration.EnumerateObject())
+            foreach (JsonProperty property in migration.EnumerateObject())
             {
                 if (property.Value.ValueKind == JsonValueKind.String)
                 {

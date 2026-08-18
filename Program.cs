@@ -16,7 +16,7 @@ internal static class Program
             return (int)ExitCode.Success;
         }
 
-        using var cancellation = new CancellationTokenSource();
+        using CancellationTokenSource cancellation = new CancellationTokenSource();
 
         Console.CancelKeyPress += (_, e) =>
         {
@@ -33,10 +33,10 @@ internal static class Program
 
         try
         {
-            var settingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-            var options = OptionsBuilder.Build(args, settingsPath);
+            string settingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+            MigrationOptions options = OptionsBuilder.Build(args, settingsPath);
 
-            var result = await new MigrationRunner(options).RunAsync(cancellation.Token);
+            MigrationResult result = await new MigrationRunner(options).RunAsync(cancellation.Token);
 
             WriteSummary(result);
 

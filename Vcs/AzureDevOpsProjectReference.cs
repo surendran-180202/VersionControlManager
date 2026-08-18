@@ -30,7 +30,7 @@ internal sealed record AzureDevOpsProjectReference(
     /// </summary>
     public static AzureDevOpsProjectReference Parse(string value)
     {
-        var input = (value ?? string.Empty).Trim().Trim('"');
+        string input = (value ?? string.Empty).Trim().Trim('"');
 
         if (input.Length == 0)
         {
@@ -43,14 +43,14 @@ internal sealed record AzureDevOpsProjectReference(
             input = $"https://{input}";
         }
 
-        if (!Uri.TryCreate(input, UriKind.Absolute, out var uri))
+        if (!Uri.TryCreate(input, UriKind.Absolute, out Uri? uri))
         {
             throw Invalid(input, "it is not a well-formed URL");
         }
 
         // Drop any userinfo -- the clone dialog emits https://org@dev.azure.com/... and we
         // authenticate by header, so a username in the URL only invites a credential prompt.
-        var origin = uri.IsDefaultPort
+        string origin = uri.IsDefaultPort
             ? $"{uri.Scheme}://{uri.Host}"
             : $"{uri.Scheme}://{uri.Host}:{uri.Port}";
 
@@ -62,18 +62,18 @@ internal sealed record AzureDevOpsProjectReference(
             origin = $"https://dev.azure.com/{Uri.EscapeDataString(uri.Host[..uri.Host.IndexOf('.')])}";
         }
 
-        var segments = uri.AbsolutePath
+        string[] segments = uri.AbsolutePath
             .Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(Uri.UnescapeDataString)
             .ToArray();
 
-        var minimumCollectionSegments = MinimumCollectionSegments(uri.Host);
+        int minimumCollectionSegments = MinimumCollectionSegments(uri.Host);
 
         string project;
         string? repository = null;
         string[] collectionSegments;
 
-        var gitIndex = Array.FindIndex(segments, s => s.Equals("_git", StringComparison.OrdinalIgnoreCase));
+        int gitIndex = Array.FindIndex(segments, s => s.Equals("_git", StringComparison.OrdinalIgnoreCase));
 
         if (gitIndex >= 0)
         {
@@ -113,7 +113,7 @@ internal sealed record AzureDevOpsProjectReference(
             throw Invalid(input, "the team project name is empty");
         }
 
-        var collectionUrl = collectionSegments.Length == 0
+        string collectionUrl = collectionSegments.Length == 0
             ? origin
             : $"{origin}/{string.Join('/', collectionSegments.Select(Uri.EscapeDataString))}";
 

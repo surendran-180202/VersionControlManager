@@ -13,7 +13,7 @@ internal static class Describe
         }
 
         double size = value;
-        var unit = 0;
+        int unit = 0;
 
         while (size >= 1024 && unit < Units.Length - 1)
         {

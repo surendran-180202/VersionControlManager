@@ -22,12 +22,12 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
 
     public async Task<AzureProjectInfo> GetProjectAsync(CancellationToken cancellationToken)
     {
-        var url = $"{project.CollectionUrl}/_apis/projects/" +
-                  $"{Uri.EscapeDataString(project.Project)}?api-version={ApiVersion}";
+        string url = $"{project.CollectionUrl}/_apis/projects/" +
+                     $"{Uri.EscapeDataString(project.Project)}?api-version={ApiVersion}";
 
-        using var request = RestSupport.Json(HttpMethod.Get, url);
+        using HttpRequestMessage request = RestSupport.Json(HttpMethod.Get, url);
 
-        using var document = await RestSupport.SendAllowingNotFoundAsync(
+        using JsonDocument? document = await RestSupport.SendAllowingNotFoundAsync(
             client, request, ServiceName, ExitCode.TargetError, cancellationToken);
 
         if (document is null)
@@ -38,7 +38,7 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
                 "Check the project name and that your token has access to it.");
         }
 
-        var root = document.RootElement;
+        JsonElement root = document.RootElement;
 
         return new AzureProjectInfo(
             RestSupport.RequiredString(root, "id", ServiceName),
@@ -48,11 +48,11 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
     /// <summary>Returns the repository, or null if it does not exist yet.</summary>
     public async Task<AzureRepositoryInfo?> FindRepositoryAsync(string name, CancellationToken cancellationToken)
     {
-        var url = $"{ProjectApiRoot}/repositories/{Uri.EscapeDataString(name)}?api-version={ApiVersion}";
+        string url = $"{ProjectApiRoot}/repositories/{Uri.EscapeDataString(name)}?api-version={ApiVersion}";
 
-        using var request = RestSupport.Json(HttpMethod.Get, url);
+        using HttpRequestMessage request = RestSupport.Json(HttpMethod.Get, url);
 
-        using var document = await RestSupport.SendAllowingNotFoundAsync(
+        using JsonDocument? document = await RestSupport.SendAllowingNotFoundAsync(
             client, request, ServiceName, ExitCode.TargetError, cancellationToken);
 
         return document is null ? null : ReadRepository(document.RootElement);
@@ -63,14 +63,14 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
         string projectId,
         CancellationToken cancellationToken)
     {
-        var url = $"{ProjectApiRoot}/repositories?api-version={ApiVersion}";
+        string url = $"{ProjectApiRoot}/repositories?api-version={ApiVersion}";
 
-        using var request = RestSupport.Json(
+        using HttpRequestMessage request = RestSupport.Json(
             HttpMethod.Post,
             url,
             new { name, project = new { id = projectId } });
 
-        using var document = await RestSupport.SendAsync(
+        using JsonDocument document = await RestSupport.SendAsync(
             client, request, ServiceName, ExitCode.TargetError, cancellationToken);
 
         return ReadRepository(document.RootElement);
@@ -79,15 +79,15 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
     /// <summary>Every ref in the target repository, e.g. "refs/heads/main".</summary>
     public async Task<IReadOnlyList<string>> ListRefsAsync(string repositoryId, CancellationToken cancellationToken)
     {
-        var url = $"{ProjectApiRoot}/repositories/{Uri.EscapeDataString(repositoryId)}" +
-                  $"/refs?api-version={ApiVersion}&$top=10000";
+        string url = $"{ProjectApiRoot}/repositories/{Uri.EscapeDataString(repositoryId)}" +
+                     $"/refs?api-version={ApiVersion}&$top=10000";
 
-        using var request = RestSupport.Json(HttpMethod.Get, url);
+        using HttpRequestMessage request = RestSupport.Json(HttpMethod.Get, url);
 
-        using var document = await RestSupport.SendAsync(
+        using JsonDocument document = await RestSupport.SendAsync(
             client, request, ServiceName, ExitCode.TargetError, cancellationToken);
 
-        if (!document.RootElement.TryGetProperty("value", out var value)
+        if (!document.RootElement.TryGetProperty("value", out JsonElement value)
             || value.ValueKind != JsonValueKind.Array)
         {
             return [];
@@ -109,9 +109,9 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
         string branchRefName,
         CancellationToken cancellationToken)
     {
-        var url = $"{ProjectApiRoot}/repositories/{Uri.EscapeDataString(repositoryId)}?api-version={ApiVersion}";
+        string url = $"{ProjectApiRoot}/repositories/{Uri.EscapeDataString(repositoryId)}?api-version={ApiVersion}";
 
-        using var request = RestSupport.Json(
+        using HttpRequestMessage request = RestSupport.Json(
             HttpMethod.Patch,
             url,
             new { defaultBranch = branchRefName });
@@ -123,7 +123,7 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
 
     private static AzureRepositoryInfo ReadRepository(JsonElement element)
     {
-        var remoteUrl = RestSupport.RequiredString(element, "remoteUrl", ServiceName);
+        string remoteUrl = RestSupport.RequiredString(element, "remoteUrl", ServiceName);
 
         return new AzureRepositoryInfo(
             RestSupport.RequiredString(element, "id", ServiceName),
@@ -138,7 +138,7 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
     /// </summary>
     private static string StripUserInfo(string url)
     {
-        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.UserInfo.Length == 0)
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) || uri.UserInfo.Length == 0)
         {
             return url;
         }
