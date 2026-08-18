@@ -193,10 +193,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
 
 		if(!await git.IsSubcommandAvailableAsync("lfs", cancellationToken))
 		{
-			throw new MigrationException(
-			                             ExitCode.GitError,
-			                             "--lfs was requested but git-lfs is not installed.",
-			                             "Install Git LFS (https://git-lfs.com) and re-run, or drop --lfs.");
+			throw new MigrationException(ExitCode.GitError, "--lfs was requested but git-lfs is not installed.", "Install Git LFS (https://git-lfs.com) and re-run, or drop --lfs.");
 		}
 
 		ConsoleLog.Info("Transferring Git LFS objects");
@@ -211,17 +208,9 @@ internal sealed class MigrationRunner(MigrationOptions options)
 	/// Mirrors GitHub's default branch onto the target, so the repository lands on the
 	/// branch its users expect rather than whichever ref arrived first.
 	/// </summary>
-	private static async Task<string?> ApplyDefaultBranchAsync(
-		AzureDevOpsClient azure,
-		GitMirror mirror,
-		string strMirrorPath,
-		AzureRepositoryInfo azureRepositoryInfo,
-		GitHubRepositoryInfo gitHubRepositoryInfo,
-		MirrorSummary mirrorSummary,
-		CancellationToken cancellationToken)
+	private static async Task<string?> ApplyDefaultBranchAsync(AzureDevOpsClient azure, GitMirror mirror, string strMirrorPath, AzureRepositoryInfo azureRepositoryInfo, GitHubRepositoryInfo gitHubRepositoryInfo, MirrorSummary mirrorSummary, CancellationToken cancellationToken)
 	{
-		string? strBranchName = gitHubRepositoryInfo.DefaultBranch
-		                        ?? await mirror.GetHeadBranchAsync(strMirrorPath, cancellationToken);
+		string? strBranchName = gitHubRepositoryInfo.DefaultBranch ?? await mirror.GetHeadBranchAsync(strMirrorPath, cancellationToken);
 
 		if(string.IsNullOrWhiteSpace(strBranchName))
 		{
@@ -253,11 +242,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
 	/// Reads the refs back from Azure DevOps and compares them with the mirror, so the
 	/// result is confirmed by the server rather than assumed from a zero exit code.
 	/// </summary>
-	private async Task VerifyAsync(
-		AzureDevOpsClient azure,
-		AzureRepositoryInfo azureRepositoryInfo,
-		MirrorSummary mirrorSummary,
-		CancellationToken cancellationToken)
+	private async Task VerifyAsync(AzureDevOpsClient azure, AzureRepositoryInfo azureRepositoryInfo, MirrorSummary mirrorSummary, CancellationToken cancellationToken)
 	{
 		IReadOnlyList<string> liTargetRefs = await azure.ListRefsAsync(azureRepositoryInfo.Id, cancellationToken);
 

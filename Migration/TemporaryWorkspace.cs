@@ -18,7 +18,7 @@ internal sealed class TemporaryWorkspace : IDisposable
 	{
 		this.RootPath = strRootPath;
 		this.MirrorPath = strMirrorPath;
-		this._keep = bKeep;
+		_keep = bKeep;
 	}
 	#endregion
 
@@ -32,13 +32,9 @@ internal sealed class TemporaryWorkspace : IDisposable
 	#region Publics
 	public static TemporaryWorkspace Create(string? strParentDirectory, string strRepositoryName, bool bKeep)
 	{
-		string strParent = string.IsNullOrWhiteSpace(strParentDirectory)
-			? Path.GetTempPath()
-			: strParentDirectory.Trim();
+		string strParent = string.IsNullOrWhiteSpace(strParentDirectory) ? Path.GetTempPath() : strParentDirectory.Trim();
 
-		string strRoot = Path.Combine(
-			strParent,
-			$"vcm-{Sanitise(strRepositoryName)}-{DateTime.Now:yyyyMMdd-HHmmss}");
+		string strRoot = Path.Combine(strParent, $"vcm-{Sanitise(strRepositoryName)}-{DateTime.Now:yyyyMMdd-HHmmss}");
 
 		try
 		{
@@ -46,10 +42,7 @@ internal sealed class TemporaryWorkspace : IDisposable
 		}
 		catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or NotSupportedException)
 		{
-			throw new MigrationException(
-				ExitCode.ConfigurationError,
-				$"Could not create a working folder at '{strRoot}': {ex.Message}",
-				"Pass --work-dir <path> to choose a writable location.");
+			throw new MigrationException(ExitCode.ConfigurationError, $"Could not create a working folder at '{strRoot}': {ex.Message}", "Pass --work-dir <path> to choose a writable location.");
 		}
 
 		// The trailing .git is the convention for a bare repository.
@@ -58,7 +51,7 @@ internal sealed class TemporaryWorkspace : IDisposable
 
 	public void Dispose()
 	{
-		if(this._keep)
+		if(_keep)
 		{
 			ConsoleLog.Info($"Working copy kept at {this.RootPath}");
 			return;

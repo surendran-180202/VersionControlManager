@@ -63,9 +63,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
 
 		strHost = NormaliseHost(strHost);
 
-		string[] liSegments = [.. strPath
-			.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.Select(Uri.UnescapeDataString)];
+		string[] liSegments = [.. strPath.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(Uri.UnescapeDataString)];
 
 		if(liSegments.Length < 2)
 		{
@@ -102,16 +100,12 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
 	/// </summary>
 	private static string BuildApiBaseUrl(string strHost)
 	{
-		return strHost.Equals("github.com", StringComparison.OrdinalIgnoreCase)
-			? "https://api.github.com"
-			: $"https://{strHost}/api/v3";
+		return strHost.Equals("github.com", StringComparison.OrdinalIgnoreCase) ? "https://api.github.com" : $"https://{strHost}/api/v3";
 	}
 
 	private static MigrationException Invalid(string strInput, string strReason)
 	{
-		return new(ExitCode.ConfigurationError,
-			$"Could not read a GitHub repository from '{strInput}' -- {strReason}.",
-			"Expected something like https://github.com/owner/repository");
+		return new(ExitCode.ConfigurationError, $"Could not read a GitHub repository from '{strInput}' -- {strReason}.", "Expected something like https://github.com/owner/repository");
 	}
 	#endregion
 }

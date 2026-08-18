@@ -10,11 +10,7 @@ namespace VersionControlManager.Vcs;
 /// <param name="Organization">Display name of the organisation or collection.</param>
 /// <param name="Project">Team project name, already URL-decoded.</param>
 /// <param name="RepositoryName">Repository named by the URL, if any.</param>
-internal sealed record AzureDevOpsProjectReference(
-	string CollectionUrl,
-	string Organization,
-	string Project,
-	string? RepositoryName)
+internal sealed record AzureDevOpsProjectReference(string CollectionUrl, string Organization, string Project, string? RepositoryName)
 {
 	#region Properties
 	public string ProjectWebUrl => $"{this.CollectionUrl}/{Uri.EscapeDataString(this.Project)}";
@@ -49,18 +45,14 @@ internal sealed record AzureDevOpsProjectReference(
 
 		// Drop any userinfo -- the clone dialog emits https://org@dev.azure.com/... and we
 		// authenticate by header, so a username in the URL only invites a credential prompt.
-		string strOrigin = uri.IsDefaultPort
-			? $"{uri.Scheme}://{uri.Host}"
-			: $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+		string strOrigin = uri.IsDefaultPort ? $"{uri.Scheme}://{uri.Host}" : $"{uri.Scheme}://{uri.Host}:{uri.Port}";
 
 		// Legacy {org}.visualstudio.com permanently redirects to dev.azure.com/{org}, and
 		// .NET strips the Authorization header when a redirect crosses origins -- which would
 		// surface as a puzzling authentication failure. Use the canonical host from the start.
 		if(IsLegacyHost(uri.Host)) strOrigin = $"https://dev.azure.com/{Uri.EscapeDataString(uri.Host[..uri.Host.IndexOf('.')])}";
 
-		string[] liSegments = [.. uri.AbsolutePath
-			.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.Select(Uri.UnescapeDataString)];
+		string[] liSegments = [.. uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(Uri.UnescapeDataString)];
 
 		int nMinimumCollectionSegments = MinimumCollectionSegments(uri.Host);
 
@@ -108,15 +100,9 @@ internal sealed record AzureDevOpsProjectReference(
 			throw Invalid(strInput, "the team project name is empty");
 		}
 
-		string strCollectionUrl = liCollectionSegments.Length == 0
-			? strOrigin
-			: $"{strOrigin}/{string.Join('/', liCollectionSegments.Select(Uri.EscapeDataString))}";
+		string strCollectionUrl = liCollectionSegments.Length == 0 ? strOrigin : $"{strOrigin}/{string.Join('/', liCollectionSegments.Select(Uri.EscapeDataString))}";
 
-		return new AzureDevOpsProjectReference(
-			strCollectionUrl,
-			ResolveOrganization(uri.Host, liCollectionSegments),
-			strProject,
-			strRepository);
+		return new AzureDevOpsProjectReference(strCollectionUrl, ResolveOrganization(uri.Host, liCollectionSegments), strProject, strRepository);
 	}
 	#endregion
 
@@ -124,8 +110,7 @@ internal sealed record AzureDevOpsProjectReference(
 	/// <summary>The retired {org}.visualstudio.com form, which carries the org in the hostname.</summary>
 	private static bool IsLegacyHost(string strHost)
 	{
-		return strHost.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase)
-		&& strHost.IndexOf('.') > 0;
+		return strHost.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase) && strHost.IndexOf('.') > 0;
 	}
 
 	/// <summary>
@@ -153,8 +138,8 @@ internal sealed record AzureDevOpsProjectReference(
 	private static MigrationException Invalid(string strInput, string strReason)
 	{
 		return new(ExitCode.ConfigurationError,
-			$"Could not read an Azure DevOps project from '{strInput}' -- {strReason}.",
-			"Expected something like https://dev.azure.com/organisation/project");
+		           $"Could not read an Azure DevOps project from '{strInput}' -- {strReason}.",
+		           "Expected something like https://dev.azure.com/organisation/project");
 	}
 	#endregion
 }
