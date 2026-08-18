@@ -1,0 +1,12 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio / Rider local state
+.vs/
+.idea/
+*.user
+*.suo
+
+# Guard against a token being committed if appsettings.json is ever filled in locally.
+appsettings.local.json

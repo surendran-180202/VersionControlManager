@@ -1,0 +1,57 @@
+using VersionControlManager.Migration;
+using VersionControlManager.Vcs;
+
+namespace VersionControlManager.Clients;
+
+/// <summary>What GitHub tells us about the source repository.</summary>
+internal sealed record GitHubRepositoryInfo(
+    string FullName,
+    string? DefaultBranch,
+    bool IsPrivate,
+    bool IsEmpty,
+    long SizeKilobytes);
+
+/// <summary>
+/// Minimal GitHub REST client: just enough to confirm the repository exists and is
+/// reachable with the supplied credentials before we spend time cloning it.
+/// </summary>
+internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference repository) : IDisposable
+{
+    private const string ServiceName = "GitHub";
+
+    public async Task<GitHubRepositoryInfo> GetRepositoryAsync(CancellationToken cancellationToken)
+    {
+        var url = $"{repository.ApiBaseUrl}/repos/" +
+                  $"{Uri.EscapeDataString(repository.Owner)}/{Uri.EscapeDataString(repository.Name)}";
+
+        using var request = RestSupport.Json(HttpMethod.Get, url);
+        request.Headers.Accept.ParseAdd("application/vnd.github+json");
+
+        using var document = await RestSupport.SendAllowingNotFoundAsync(
+            client, request, ServiceName, ExitCode.SourceError, cancellationToken);
+
+        if (document is null)
+        {
+            throw new MigrationException(
+                ExitCode.SourceError,
+                $"GitHub has no repository '{repository}' visible to this account.",
+                "Check the URL for typos, and that the token has access if the repository is private.");
+        }
+
+        var root = document.RootElement;
+
+        var size = root.TryGetProperty("size", out var sizeElement)
+                   && sizeElement.TryGetInt64(out var sizeValue)
+            ? sizeValue
+            : 0;
+
+        return new GitHubRepositoryInfo(
+            RestSupport.StringOrNull(root, "full_name") ?? repository.ToString(),
+            RestSupport.StringOrNull(root, "default_branch"),
+            root.TryGetProperty("private", out var isPrivate) && isPrivate.ValueKind == System.Text.Json.JsonValueKind.True,
+            size == 0,
+            size);
+    }
+
+    public void Dispose() => client.Dispose();
+}
