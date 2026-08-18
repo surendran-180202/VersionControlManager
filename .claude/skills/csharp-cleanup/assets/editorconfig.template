@@ -1,0 +1,39 @@
+root = true
+
+# Formatting rules for this repository. Visual Studio, Rider and `dotnet format`
+# all honour this file, so the editor and the committed code stay in agreement
+# instead of silently reformatting each other's work.
+[*.cs]
+
+# ---- Layout ----------------------------------------------------------------
+indent_style = tab
+indent_size = 4
+tab_width = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# ---- Explicit types, never `var` -------------------------------------------
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = false:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# ---- Qualify instance members with `this.` ---------------------------------
+dotnet_style_qualification_for_field = true:suggestion
+dotnet_style_qualification_for_property = true:suggestion
+dotnet_style_qualification_for_method = true:suggestion
+dotnet_style_qualification_for_event = true:suggestion
+
+# ---- Keyword spacing: `if(x)` rather than `if (x)` --------------------------
+csharp_space_after_keywords_in_control_flow_statements = false
+
+# ---- Bodies: blocks for methods, expression bodies for properties ----------
+csharp_style_expression_bodied_methods = false:suggestion
+csharp_style_expression_bodied_constructors = false:suggestion
+csharp_style_expression_bodied_operators = false:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_indexers = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+
+[*.{json,xml,csproj,sln}]
+indent_style = space
+indent_size = 2

@@ -154,3 +154,26 @@ Git/                      git process runner, mirror clone and push
 Migration/                Pipeline, temp workspace, error types
 Logging/                  Console output with secret redaction
 ```
+
+## Code style
+
+The codebase follows a house style: explicit types rather than `var`, type-prefixed locals
+and parameters (`strUrl`, `nCount`, `bFound`, `liItems`) with `UPPER_SNAKE_CASE` constants,
+members grouped into `#region` blocks, and Visual Studio formatting (tabs, `if(x)`, `this.`
+qualification).
+
+`.editorconfig` at the root enforces the formatting half — Visual Studio, Rider and
+`dotnet format` all honour it, so the editor and the committed code stay in agreement.
+
+The rest lives in `.claude/skills/csharp-cleanup/`, a Claude Code skill bundled with the
+repository so anyone working on it applies the same conventions. Its scripts are useful on
+their own, and need only perl:
+
+```bash
+perl .claude/skills/csharp-cleanup/scripts/check-style.pl .
+```
+
+That verifies every rule above and exits non-zero on a violation, so it drops straight into a
+build or a pre-commit hook. Alongside it, `list-members.pl` shows each type's members with the
+region they belong in, and `rename-identifiers.pl` renames identifiers in code without
+corrupting doc comments or string literals.
