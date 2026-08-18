@@ -13,7 +13,7 @@ internal sealed record GitRef(string Name, string ObjectType)
 
 	public bool IsNote => this.Name.StartsWith("refs/notes/", StringComparison.Ordinal);
 
-	public string ShortName => this.Name.Split('/', 3) is [_, _, string rest] ? rest : this.Name;
+	public string ShortName => this.Name.Split('/', 3) is [_, _, string strRest] ? strRest : this.Name;
 	#endregion
 }
 
@@ -42,63 +42,63 @@ internal sealed class GitMirror(GitCommandRunner git)
 	#region Publics
 	/// <summary>Clones every ref and object from <paramref name="cloneUrl"/> into a bare mirror.</summary>
 	public async Task CloneAsync(
-		string cloneUrl,
-		string destination,
-		string authorizationHeader,
+		string strCloneUrl,
+		string strDestination,
+		string strAuthorizationHeader,
 		CancellationToken cancellationToken)
 	{
-		GitResult result = await git.RunAsync(
-			["clone", "--mirror", "--progress", cloneUrl, destination],
-			authorizationHeader: authorizationHeader,
-			relayProgress: true,
+		GitResult gitResult = await git.RunAsync(
+			["clone", "--mirror", "--progress", strCloneUrl, strDestination],
+			strAuthorizationHeader: strAuthorizationHeader,
+			bRelayProgress: true,
 			cancellationToken: cancellationToken);
 
-		if(!result.Success)
+		if(!gitResult.Success)
 		{
 			throw new MigrationException(
 				ExitCode.SourceError,
-				$"Mirror clone of {cloneUrl} failed.{Environment.NewLine}{ConsoleLog.Redact(result.FailureText)}",
-				DescribeCloneFailure(result.FailureText));
+				$"Mirror clone of {strCloneUrl} failed.{Environment.NewLine}{ConsoleLog.Redact(gitResult.FailureText)}",
+				DescribeCloneFailure(gitResult.FailureText));
 		}
 	}
 
-	public async Task<MirrorSummary> SummariseAsync(string repositoryPath, CancellationToken cancellationToken)
+	public async Task<MirrorSummary> SummariseAsync(string strRepositoryPath, CancellationToken cancellationToken)
 	{
-		GitResult refsResult = await git.RunAsync(
+		GitResult gitResultRefs = await git.RunAsync(
 			["for-each-ref", "--format=%(refname)%09%(objecttype)"],
-			repositoryPath,
+			strRepositoryPath,
 			cancellationToken: cancellationToken);
 
-		if(!refsResult.Success)
+		if(!gitResultRefs.Success)
 		{
 			throw new MigrationException(
 				ExitCode.GitError,
-				$"Could not list references in the mirror: {refsResult.FailureText}");
+				$"Could not list references in the mirror: {gitResultRefs.FailureText}");
 		}
 
-		GitRef[] refs = [.. refsResult.StandardOutput
+		GitRef[] liRefs = [.. gitResultRefs.StandardOutput
 			.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.Select(line => line.Split('\t'))
-			.Where(parts => parts.Length == 2)
-			.Select(parts => new GitRef(parts[0], parts[1]))];
+			.Select(strLine => strLine.Split('\t'))
+			.Where(liParts => liParts.Length == 2)
+			.Select(liParts => new GitRef(liParts[0], liParts[1]))];
 
-		int commitCount = 0;
+		int nCommitCount = 0;
 
-		if(refs.Length > 0)
+		if(liRefs.Length > 0)
 		{
-			GitResult countResult = await git.RunAsync(
+			GitResult gitResultCount = await git.RunAsync(
 				["rev-list", "--all", "--count"],
-				repositoryPath,
+				strRepositoryPath,
 				cancellationToken: cancellationToken);
 
-			if(countResult.Success
-				&& int.TryParse(countResult.StandardOutput.Trim(), out int parsed))
+			if(gitResultCount.Success
+				&& int.TryParse(gitResultCount.StandardOutput.Trim(), out int nParsed))
 			{
-				commitCount = parsed;
+				nCommitCount = nParsed;
 			}
 		}
 
-		return new MirrorSummary(refs, commitCount, MeasureDirectory(repositoryPath));
+		return new MirrorSummary(liRefs, nCommitCount, MeasureDirectory(strRepositoryPath));
 	}
 
 	/// <summary>
@@ -108,43 +108,43 @@ internal sealed class GitMirror(GitCommandRunner git)
 	/// otherwise fail the whole push.
 	/// </summary>
 	public async Task PushAsync(
-		string repositoryPath,
-		string targetUrl,
-		MirrorSummary summary,
-		bool includeNotes,
-		string authorizationHeader,
+		string strRepositoryPath,
+		string strTargetUrl,
+		MirrorSummary mirrorSummary,
+		bool bIncludeNotes,
+		string strAuthorizationHeader,
 		CancellationToken cancellationToken)
 	{
-		List<string> arguments = ["push", "--porcelain", "--progress", targetUrl];
+		List<string> liArguments = ["push", "--porcelain", "--progress", strTargetUrl];
 
-		if(summary.Branches.Count > 0)
+		if(mirrorSummary.Branches.Count > 0)
 		{
-			arguments.Add("refs/heads/*:refs/heads/*");
+			liArguments.Add("refs/heads/*:refs/heads/*");
 		}
 
-		if(summary.Tags.Count > 0)
+		if(mirrorSummary.Tags.Count > 0)
 		{
-			arguments.Add("refs/tags/*:refs/tags/*");
+			liArguments.Add("refs/tags/*:refs/tags/*");
 		}
 
-		if(includeNotes && summary.Notes.Count > 0)
+		if(bIncludeNotes && mirrorSummary.Notes.Count > 0)
 		{
-			arguments.Add("refs/notes/*:refs/notes/*");
+			liArguments.Add("refs/notes/*:refs/notes/*");
 		}
 
-		GitResult result = await git.RunAsync(
-			arguments,
-			repositoryPath,
-			authorizationHeader,
-			relayProgress: true,
+		GitResult gitResult = await git.RunAsync(
+			liArguments,
+			strRepositoryPath,
+			strAuthorizationHeader,
+			bRelayProgress: true,
 			cancellationToken: cancellationToken);
 
-		if(!result.Success)
+		if(!gitResult.Success)
 		{
 			throw new MigrationException(
 				ExitCode.TargetError,
-				$"Push to Azure DevOps failed.{Environment.NewLine}{ConsoleLog.Redact(result.FailureText)}",
-				DescribePushFailure(result.FailureText));
+				$"Push to Azure DevOps failed.{Environment.NewLine}{ConsoleLog.Redact(gitResult.FailureText)}",
+				DescribePushFailure(gitResult.FailureText));
 		}
 	}
 
@@ -153,16 +153,16 @@ internal sealed class GitMirror(GitCommandRunner git)
 	/// --lfs was not requested, so checking HEAD's .gitattributes is sufficient: a repo
 	/// using LFS declares it there. Reading the blob directly works in a bare mirror.
 	/// </summary>
-	public async Task<bool> HasLfsContentAsync(string repositoryPath, CancellationToken cancellationToken)
+	public async Task<bool> HasLfsContentAsync(string strRepositoryPath, CancellationToken cancellationToken)
 	{
-		GitResult result = await git.RunAsync(
+		GitResult gitResult = await git.RunAsync(
 			["cat-file", "-p", "HEAD:.gitattributes"],
-			repositoryPath,
+			strRepositoryPath,
 			cancellationToken: cancellationToken);
 
 		// A non-zero exit just means there is no .gitattributes on the default branch.
-		return result.Success
-			&& result.StandardOutput.Contains("filter=lfs", StringComparison.OrdinalIgnoreCase);
+		return gitResult.Success
+			&& gitResult.StandardOutput.Contains("filter=lfs", StringComparison.OrdinalIgnoreCase);
 	}
 
 	/// <summary>
@@ -171,61 +171,61 @@ internal sealed class GitMirror(GitCommandRunner git)
 	/// against its own host and therefore its own credentials.
 	/// </summary>
 	public async Task PushLfsAsync(
-		string repositoryPath,
-		string targetUrl,
+		string strRepositoryPath,
+		string strTargetUrl,
 		string sourceAuthorizationHeader,
 		string targetAuthorizationHeader,
 		CancellationToken cancellationToken)
 	{
-		GitResult fetch = await git.RunAsync(
+		GitResult gitResultFetch = await git.RunAsync(
 			["lfs", "fetch", "--all", "origin"],
-			repositoryPath,
+			strRepositoryPath,
 			sourceAuthorizationHeader,
-			relayProgress: true,
+			bRelayProgress: true,
 			cancellationToken: cancellationToken);
 
-		if(!fetch.Success)
+		if(!gitResultFetch.Success)
 		{
 			throw new MigrationException(
 				ExitCode.SourceError,
-				$"Could not fetch Git LFS objects from the source.{Environment.NewLine}{ConsoleLog.Redact(fetch.FailureText)}");
+				$"Could not fetch Git LFS objects from the source.{Environment.NewLine}{ConsoleLog.Redact(gitResultFetch.FailureText)}");
 		}
 
-		GitResult push = await git.RunAsync(
-			["lfs", "push", "--all", targetUrl],
-			repositoryPath,
+		GitResult gitResultPush = await git.RunAsync(
+			["lfs", "push", "--all", strTargetUrl],
+			strRepositoryPath,
 			targetAuthorizationHeader,
-			relayProgress: true,
+			bRelayProgress: true,
 			cancellationToken: cancellationToken);
 
-		if(!push.Success)
+		if(!gitResultPush.Success)
 		{
 			throw new MigrationException(
 				ExitCode.TargetError,
-				$"Could not push Git LFS objects to the target.{Environment.NewLine}{ConsoleLog.Redact(push.FailureText)}");
+				$"Could not push Git LFS objects to the target.{Environment.NewLine}{ConsoleLog.Redact(gitResultPush.FailureText)}");
 		}
 	}
 
 	/// <summary>The branch the mirror's HEAD points at, e.g. "main". Null if detached.</summary>
-	public async Task<string?> GetHeadBranchAsync(string repositoryPath, CancellationToken cancellationToken)
+	public async Task<string?> GetHeadBranchAsync(string strRepositoryPath, CancellationToken cancellationToken)
 	{
-		GitResult result = await git.RunAsync(
+		GitResult gitResult = await git.RunAsync(
 			["symbolic-ref", "--short", "HEAD"],
-			repositoryPath,
+			strRepositoryPath,
 			cancellationToken: cancellationToken);
 
-		string value = result.StandardOutput.Trim();
+		string strValue = gitResult.StandardOutput.Trim();
 
-		return result.Success && value.Length > 0 ? value : null;
+		return gitResult.Success && strValue.Length > 0 ? strValue : null;
 	}
 	#endregion
 
 	#region Privates
-	private static long MeasureDirectory(string path)
+	private static long MeasureDirectory(string strPath)
 	{
 		try
 		{
-			return new DirectoryInfo(path)
+			return new DirectoryInfo(strPath)
 				.EnumerateFiles("*", SearchOption.AllDirectories)
 				.Sum(f => f.Length);
 		}
@@ -235,17 +235,17 @@ internal sealed class GitMirror(GitCommandRunner git)
 		}
 	}
 
-	private static string? DescribeCloneFailure(string failureText)
+	private static string? DescribeCloneFailure(string strFailureText)
 	{
-		if(failureText.Contains("Authentication failed", StringComparison.OrdinalIgnoreCase)
-			|| failureText.Contains("could not read Username", StringComparison.OrdinalIgnoreCase)
-			|| failureText.Contains("403", StringComparison.Ordinal))
+		if(strFailureText.Contains("Authentication failed", StringComparison.OrdinalIgnoreCase)
+			|| strFailureText.Contains("could not read Username", StringComparison.OrdinalIgnoreCase)
+			|| strFailureText.Contains("403", StringComparison.Ordinal))
 		{
 			return "Check the GitHub token is valid and has 'repo' scope for a private repository.";
 		}
 
-		if(failureText.Contains("not found", StringComparison.OrdinalIgnoreCase)
-			|| failureText.Contains("404", StringComparison.Ordinal))
+		if(strFailureText.Contains("not found", StringComparison.OrdinalIgnoreCase)
+			|| strFailureText.Contains("404", StringComparison.Ordinal))
 		{
 			return "Check the repository URL, and that the token can see it.";
 		}
@@ -253,23 +253,23 @@ internal sealed class GitMirror(GitCommandRunner git)
 		return null;
 	}
 
-	private static string? DescribePushFailure(string failureText)
+	private static string? DescribePushFailure(string strFailureText)
 	{
-		if(failureText.Contains("TF401019", StringComparison.Ordinal)
-			|| failureText.Contains("denied", StringComparison.OrdinalIgnoreCase)
-			|| failureText.Contains("403", StringComparison.Ordinal))
+		if(strFailureText.Contains("TF401019", StringComparison.Ordinal)
+			|| strFailureText.Contains("denied", StringComparison.OrdinalIgnoreCase)
+			|| strFailureText.Contains("403", StringComparison.Ordinal))
 		{
 			return "The Azure DevOps token needs Code (read, write, and manage) scope.";
 		}
 
-		if(failureText.Contains("non-fast-forward", StringComparison.OrdinalIgnoreCase)
-			|| failureText.Contains("fetch first", StringComparison.OrdinalIgnoreCase))
+		if(strFailureText.Contains("non-fast-forward", StringComparison.OrdinalIgnoreCase)
+			|| strFailureText.Contains("fetch first", StringComparison.OrdinalIgnoreCase))
 		{
 			return "The target repository already contains conflicting history. Use an empty repository, or --target-repo to create a new one.";
 		}
 
-		if(failureText.Contains("VS403636", StringComparison.Ordinal)
-			|| failureText.Contains("too large", StringComparison.OrdinalIgnoreCase))
+		if(strFailureText.Contains("VS403636", StringComparison.Ordinal)
+			|| strFailureText.Contains("too large", StringComparison.OrdinalIgnoreCase))
 		{
 			return "A file in history exceeds the Azure DevOps size limit. Consider Git LFS, or rewriting history before migrating.";
 		}

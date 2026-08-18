@@ -19,36 +19,36 @@ internal sealed record GitHubRepositoryInfo(
 internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference repository) : IDisposable
 {
 	#region Constants
-	private const string ServiceName = "GitHub";
+	private const string SERVICE_NAME = "GitHub";
 	#endregion
 
 	#region Publics
 	public async Task<GitHubRepositoryInfo> GetRepositoryAsync(CancellationToken cancellationToken)
 	{
-		string url = $"{repository.ApiBaseUrl}/repos/" +
+		string strUrl = $"{repository.ApiBaseUrl}/repos/" +
 					 $"{Uri.EscapeDataString(repository.Owner)}/{Uri.EscapeDataString(repository.Name)}";
 
-		using HttpRequestMessage request = RestSupport.Json(HttpMethod.Get, url);
+		using HttpRequestMessage request = RestSupport.Json(HttpMethod.Get, strUrl);
 		request.Headers.Accept.ParseAdd("application/vnd.github+json");
 
 		using JsonDocument? document = await RestSupport.SendAllowingNotFoundAsync(
-			client, request, ServiceName, ExitCode.SourceError, cancellationToken) ?? throw new MigrationException(
+			client, request, SERVICE_NAME, ExitCode.SourceError, cancellationToken) ?? throw new MigrationException(
 				ExitCode.SourceError,
 				$"GitHub has no repository '{repository}' visible to this account.",
 				"Check the URL for typos, and that the token has access if the repository is private.");
 		JsonElement root = document.RootElement;
 
-		long size = root.TryGetProperty("size", out JsonElement sizeElement)
-					&& sizeElement.TryGetInt64(out long sizeValue)
-			? sizeValue
+		long lSize = root.TryGetProperty("size", out JsonElement sizeElement)
+					&& sizeElement.TryGetInt64(out long lSizeValue)
+			? lSizeValue
 			: 0;
 
 		return new GitHubRepositoryInfo(
 			RestSupport.StringOrNull(root, "full_name") ?? repository.ToString(),
 			RestSupport.StringOrNull(root, "default_branch"),
 			root.TryGetProperty("private", out JsonElement isPrivate) && isPrivate.ValueKind == JsonValueKind.True,
-			size == 0,
-			size);
+			lSize == 0,
+			lSize);
 	}
 
 	public void Dispose()

@@ -20,13 +20,13 @@ internal enum ExitCode
 /// An expected, explainable failure. These are reported as a single clear line rather than
 /// a stack trace -- the user needs to know what to fix, not where we threw.
 /// </summary>
-internal sealed class MigrationException(ExitCode exitCode, string message, string? hint = null)
-	: Exception(message)
+internal sealed class MigrationException(ExitCode exitCode, string strMessage, string? strHint = null)
+	: Exception(strMessage)
 {
 	#region Properties
 	public ExitCode ExitCode { get; } = exitCode;
 
 	/// <summary>Optional follow-up telling the user how to resolve the failure.</summary>
-	public string? Hint { get; } = hint;
+	public string? Hint { get; } = strHint;
 	#endregion
 }

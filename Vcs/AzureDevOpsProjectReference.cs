@@ -21,9 +21,9 @@ internal sealed record AzureDevOpsProjectReference(
 	#endregion
 
 	#region Publics
-	public string RepositoryWebUrl(string repositoryName)
+	public string RepositoryWebUrl(string strRepositoryName)
 	{
-		return $"{this.ProjectWebUrl}/_git/{Uri.EscapeDataString(repositoryName)}";
+		return $"{this.ProjectWebUrl}/_git/{Uri.EscapeDataString(strRepositoryName)}";
 	}
 
 	public override string ToString()
@@ -36,29 +36,29 @@ internal sealed record AzureDevOpsProjectReference(
 	/// and on-premises Azure DevOps Server (host/tfs/collection/project), with or without
 	/// a /_git/repository suffix, and with credentials or a query string attached.
 	/// </summary>
-	public static AzureDevOpsProjectReference Parse(string value)
+	public static AzureDevOpsProjectReference Parse(string strValue)
 	{
-		string input = (value ?? string.Empty).Trim().Trim('"');
+		string strInput = (strValue ?? string.Empty).Trim().Trim('"');
 
-		if(input.Length == 0)
+		if(strInput.Length == 0)
 		{
-			throw Invalid(input, "the value is empty");
+			throw Invalid(strInput, "the value is empty");
 		}
 
 		// Accept a bare host so users can paste from a browser without the scheme.
-		if(!input.Contains("://", StringComparison.Ordinal))
+		if(!strInput.Contains("://", StringComparison.Ordinal))
 		{
-			input = $"https://{input}";
+			strInput = $"https://{strInput}";
 		}
 
-		if(!Uri.TryCreate(input, UriKind.Absolute, out Uri? uri))
+		if(!Uri.TryCreate(strInput, UriKind.Absolute, out Uri? uri))
 		{
-			throw Invalid(input, "it is not a well-formed URL");
+			throw Invalid(strInput, "it is not a well-formed URL");
 		}
 
 		// Drop any userinfo -- the clone dialog emits https://org@dev.azure.com/... and we
 		// authenticate by header, so a username in the URL only invites a credential prompt.
-		string origin = uri.IsDefaultPort
+		string strOrigin = uri.IsDefaultPort
 			? $"{uri.Scheme}://{uri.Host}"
 			: $"{uri.Scheme}://{uri.Host}:{uri.Port}";
 
@@ -67,77 +67,77 @@ internal sealed record AzureDevOpsProjectReference(
 		// surface as a puzzling authentication failure. Use the canonical host from the start.
 		if(IsLegacyHost(uri.Host))
 		{
-			origin = $"https://dev.azure.com/{Uri.EscapeDataString(uri.Host[..uri.Host.IndexOf('.')])}";
+			strOrigin = $"https://dev.azure.com/{Uri.EscapeDataString(uri.Host[..uri.Host.IndexOf('.')])}";
 		}
 
-		string[] segments = [.. uri.AbsolutePath
+		string[] liSegments = [.. uri.AbsolutePath
 			.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Select(Uri.UnescapeDataString)];
 
-		int minimumCollectionSegments = MinimumCollectionSegments(uri.Host);
+		int nMinimumCollectionSegments = MinimumCollectionSegments(uri.Host);
 
-		string project;
-		string? repository = null;
-		string[] collectionSegments;
+		string strProject;
+		string? strRepository = null;
+		string[] liCollectionSegments;
 
-		int gitIndex = Array.FindIndex(segments, s => s.Equals("_git", StringComparison.OrdinalIgnoreCase));
+		int nGitIndex = Array.FindIndex(liSegments, strSegment => strSegment.Equals("_git", StringComparison.OrdinalIgnoreCase));
 
-		if(gitIndex >= 0)
+		if(nGitIndex >= 0)
 		{
-			if(gitIndex + 1 >= segments.Length)
+			if(nGitIndex + 1 >= liSegments.Length)
 			{
-				throw Invalid(input, "the URL ends at '_git' without naming a repository");
+				throw Invalid(strInput, "the URL ends at '_git' without naming a repository");
 			}
 
-			repository = StripGitSuffix(segments[gitIndex + 1]);
+			strRepository = StripGitSuffix(liSegments[nGitIndex + 1]);
 
-			if(gitIndex - 1 >= minimumCollectionSegments)
+			if(nGitIndex - 1 >= nMinimumCollectionSegments)
 			{
-				project = segments[gitIndex - 1];
-				collectionSegments = segments[..(gitIndex - 1)];
+				strProject = liSegments[nGitIndex - 1];
+				liCollectionSegments = liSegments[..(nGitIndex - 1)];
 			}
 			else
 			{
 				// Azure DevOps allows .../_git/<name> when the project and repository
 				// share a name, so the project segment is absent.
-				project = repository;
-				collectionSegments = segments[..gitIndex];
+				strProject = strRepository;
+				liCollectionSegments = liSegments[..nGitIndex];
 			}
 		}
 		else
 		{
-			if(segments.Length < minimumCollectionSegments + 1)
+			if(liSegments.Length < nMinimumCollectionSegments + 1)
 			{
-				throw Invalid(input, "no team project was found in the path");
+				throw Invalid(strInput, "no team project was found in the path");
 			}
 
-			project = segments[^1];
-			collectionSegments = segments[..^1];
+			strProject = liSegments[^1];
+			liCollectionSegments = liSegments[..^1];
 		}
 
-		if(project.Length == 0)
+		if(strProject.Length == 0)
 		{
-			throw Invalid(input, "the team project name is empty");
+			throw Invalid(strInput, "the team project name is empty");
 		}
 
-		string collectionUrl = collectionSegments.Length == 0
-			? origin
-			: $"{origin}/{string.Join('/', collectionSegments.Select(Uri.EscapeDataString))}";
+		string strCollectionUrl = liCollectionSegments.Length == 0
+			? strOrigin
+			: $"{strOrigin}/{string.Join('/', liCollectionSegments.Select(Uri.EscapeDataString))}";
 
 		return new AzureDevOpsProjectReference(
-			collectionUrl,
-			ResolveOrganization(uri.Host, collectionSegments),
-			project,
-			repository);
+			strCollectionUrl,
+			ResolveOrganization(uri.Host, liCollectionSegments),
+			strProject,
+			strRepository);
 	}
 	#endregion
 
 	#region Privates
 	/// <summary>The retired {org}.visualstudio.com form, which carries the org in the hostname.</summary>
-	private static bool IsLegacyHost(string host)
+	private static bool IsLegacyHost(string strHost)
 	{
-		return host.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase)
-		&& host.IndexOf('.') > 0;
+		return strHost.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase)
+		&& strHost.IndexOf('.') > 0;
 	}
 
 	/// <summary>
@@ -145,30 +145,30 @@ internal sealed record AzureDevOpsProjectReference(
 	/// dev.azure.com needs the organisation; visualstudio.com carries it in the hostname;
 	/// on-premises servers need at least a collection name.
 	/// </summary>
-	private static int MinimumCollectionSegments(string host)
+	private static int MinimumCollectionSegments(string strHost)
 	{
-		return IsLegacyHost(host) ? 0 : 1;
+		return IsLegacyHost(strHost) ? 0 : 1;
 	}
 
-	private static string ResolveOrganization(string host, string[] collectionSegments)
+	private static string ResolveOrganization(string strHost, string[] liCollectionSegments)
 	{
-		if(IsLegacyHost(host))
+		if(IsLegacyHost(strHost))
 		{
-			return host[..host.IndexOf('.')];
+			return strHost[..strHost.IndexOf('.')];
 		}
 
-		return collectionSegments.Length > 0 ? collectionSegments[^1] : host;
+		return liCollectionSegments.Length > 0 ? liCollectionSegments[^1] : strHost;
 	}
 
-	private static string StripGitSuffix(string name)
+	private static string StripGitSuffix(string strName)
 	{
-		return name.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
+		return strName.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? strName[..^4] : strName;
 	}
 
-	private static MigrationException Invalid(string input, string reason)
+	private static MigrationException Invalid(string strInput, string strReason)
 	{
 		return new(ExitCode.ConfigurationError,
-			$"Could not read an Azure DevOps project from '{input}' -- {reason}.",
+			$"Could not read an Azure DevOps project from '{strInput}' -- {strReason}.",
 			"Expected something like https://dev.azure.com/organisation/project");
 	}
 	#endregion

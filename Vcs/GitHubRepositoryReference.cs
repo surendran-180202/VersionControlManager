@@ -23,103 +23,103 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
 	/// Parses the shapes people actually paste: an HTTPS URL, an SSH URL, a "gh"-style
 	/// owner/repo pair, with or without a .git suffix, on github.com or GitHub Enterprise.
 	/// </summary>
-	public static GitHubRepositoryReference Parse(string value)
+	public static GitHubRepositoryReference Parse(string strValue)
 	{
-		string input = (value ?? string.Empty).Trim().Trim('"');
+		string strInput = (strValue ?? string.Empty).Trim().Trim('"');
 
-		if(input.Length == 0)
+		if(strInput.Length == 0)
 		{
-			throw Invalid(input, "the value is empty");
+			throw Invalid(strInput, "the value is empty");
 		}
 
-		string host;
-		string path;
+		string strHost;
+		string strPath;
 
 		// git@github.com:owner/repo.git  and  ssh://git@github.com/owner/repo.git
-		Match scpMatch = Regex.Match(input, @"^(?:ssh://)?[^@/]+@(?<host>[^:/]+)[:/](?<path>.+)$");
+		Match scpMatch = Regex.Match(strInput, @"^(?:ssh://)?[^@/]+@(?<host>[^:/]+)[:/](?<path>.+)$");
 
-		if(scpMatch.Success && !input.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+		if(scpMatch.Success && !strInput.StartsWith("http", StringComparison.OrdinalIgnoreCase))
 		{
-			host = scpMatch.Groups["host"].Value;
-			path = scpMatch.Groups["path"].Value;
+			strHost = scpMatch.Groups["host"].Value;
+			strPath = scpMatch.Groups["path"].Value;
 		}
-		else if(input.Contains("://", StringComparison.Ordinal))
+		else if(strInput.Contains("://", StringComparison.Ordinal))
 		{
-			if(!Uri.TryCreate(input, UriKind.Absolute, out Uri? uri))
+			if(!Uri.TryCreate(strInput, UriKind.Absolute, out Uri? uri))
 			{
-				throw Invalid(input, "it is not a well-formed URL");
+				throw Invalid(strInput, "it is not a well-formed URL");
 			}
 
-			host = uri.Host;
-			path = uri.AbsolutePath;
+			strHost = uri.Host;
+			strPath = uri.AbsolutePath;
 		}
-		else if(Regex.IsMatch(input, @"^[^/\s]+/[^/\s]+/?$"))
+		else if(Regex.IsMatch(strInput, @"^[^/\s]+/[^/\s]+/?$"))
 		{
 			// Bare "owner/repo" is unambiguous enough to accept.
-			host = "github.com";
-			path = input;
+			strHost = "github.com";
+			strPath = strInput;
 		}
 		else
 		{
-			throw Invalid(input, "it is not a recognised GitHub URL");
+			throw Invalid(strInput, "it is not a recognised GitHub URL");
 		}
 
-		host = NormaliseHost(host);
+		strHost = NormaliseHost(strHost);
 
-		string[] segments = [.. path
+		string[] liSegments = [.. strPath
 			.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Select(Uri.UnescapeDataString)];
 
-		if(segments.Length < 2)
+		if(liSegments.Length < 2)
 		{
-			throw Invalid(input, "no owner/repository pair was found in the path");
+			throw Invalid(strInput, "no owner/repository pair was found in the path");
 		}
 
-		string owner = segments[0];
-		string name = StripGitSuffix(segments[1]);
+		string strOwner = liSegments[0];
+		string strName = StripGitSuffix(liSegments[1]);
 
-		if(owner.Length == 0 || name.Length == 0)
+		if(strOwner.Length == 0 || strName.Length == 0)
 		{
-			throw Invalid(input, "the owner or repository name is empty");
+			throw Invalid(strInput, "the owner or repository name is empty");
 		}
 
-		return new GitHubRepositoryReference(host, owner, name, BuildApiBaseUrl(host));
+		return new GitHubRepositoryReference(strHost, strOwner, strName, BuildApiBaseUrl(strHost));
 	}
 	#endregion
 
 	#region Privates
-	private static string NormaliseHost(string host)
+	private static string NormaliseHost(string strHost)
 	{
-		host = host.Trim().TrimEnd('.');
+		strHost = strHost.Trim().TrimEnd('.');
 
-		if(host.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
+		if(strHost.StartsWith("www.", StringComparison.OrdinalIgnoreCase))
 		{
-			host = host[4..];
+			strHost = strHost[4..];
 		}
 
-		return host;
+		return strHost;
 	}
 
-	private static string StripGitSuffix(string name)
+	private static string StripGitSuffix(string strName)
 	{
-		return name.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
+		return strName.EndsWith(".git", StringComparison.OrdinalIgnoreCase) ? strName[..^4] : strName;
 	}
 
 	/// <summary>
 	/// github.com serves its API from a separate host; GitHub Enterprise Server serves it
 	/// from /api/v3 on the same host.
 	/// </summary>
-	private static string BuildApiBaseUrl(string host)
+	private static string BuildApiBaseUrl(string strHost)
 	{
-		return host.Equals("github.com", StringComparison.OrdinalIgnoreCase)
+		return strHost.Equals("github.com", StringComparison.OrdinalIgnoreCase)
 			? "https://api.github.com"
-			: $"https://{host}/api/v3";
+			: $"https://{strHost}/api/v3";
 	}
 
-	private static MigrationException Invalid(string input, string reason)
+	private static MigrationException Invalid(string strInput, string strReason)
 	{
 		return new(ExitCode.ConfigurationError,
-			$"Could not read a GitHub repository from '{input}' -- {reason}.",
+			$"Could not read a GitHub repository from '{strInput}' -- {strReason}.",
 			"Expected something like https://github.com/owner/repository");
 	}
 	#endregion

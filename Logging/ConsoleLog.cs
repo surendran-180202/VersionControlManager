@@ -10,11 +10,11 @@ namespace VersionControlManager.Logging;
 internal static class ConsoleLog
 {
 	#region Constants
-	private const string Mask = "***";
+	private const string MASK = "***";
 
 	/// <summary>Shortest string we are willing to treat as a secret. Redacting a
 	/// two-character token would blank out unrelated text and hide real errors.</summary>
-	private const int MinimumSecretLength = 6;
+	private const int MINIMUM_SECRET_LENGTH = 6;
 	#endregion
 
 	#region Fields
@@ -31,80 +31,80 @@ internal static class ConsoleLog
 	/// Registers a value to be masked from all future output. Also registers the base64
 	/// Basic-auth encodings we build from it, because those appear in git trace output.
 	/// </summary>
-	public static void RegisterSecret(string? secret, string? userName = null)
+	public static void RegisterSecret(string? strSecret, string? strUserName = null)
 	{
-		if(string.IsNullOrEmpty(secret) || secret.Length < MinimumSecretLength)
+		if(string.IsNullOrEmpty(strSecret) || strSecret.Length < MINIMUM_SECRET_LENGTH)
 		{
 			return;
 		}
 
-		Add(secret);
-		Add(Convert.ToBase64String(Encoding.UTF8.GetBytes($":{secret}")));
-		Add(Convert.ToBase64String(Encoding.UTF8.GetBytes($"{userName ?? string.Empty}:{secret}")));
+		Add(strSecret);
+		Add(Convert.ToBase64String(Encoding.UTF8.GetBytes($":{strSecret}")));
+		Add(Convert.ToBase64String(Encoding.UTF8.GetBytes($"{strUserName ?? string.Empty}:{strSecret}")));
 	}
 
-	public static string Redact(string? text)
+	public static string Redact(string? strText)
 	{
-		if(string.IsNullOrEmpty(text))
+		if(string.IsNullOrEmpty(strText))
 		{
 			return string.Empty;
 		}
 
 		// Longest first, so a secret containing another secret is fully masked.
-		foreach(string secret in Secrets.OrderByDescending(s => s.Length))
+		foreach(string strSecret in Secrets.OrderByDescending(s => s.Length))
 		{
-			text = text.Replace(secret, Mask, StringComparison.Ordinal);
+			strText = strText.Replace(strSecret, MASK, StringComparison.Ordinal);
 		}
 
-		return text;
+		return strText;
 	}
 
-	public static void Banner(string title, string subtitle)
+	public static void Banner(string strTitle, string strSubtitle)
 	{
 		Console.WriteLine();
-		Write(ConsoleColor.Cyan, title);
-		Write(ConsoleColor.DarkGray, subtitle);
+		Write(ConsoleColor.Cyan, strTitle);
+		Write(ConsoleColor.DarkGray, strSubtitle);
 		Console.WriteLine();
 	}
 
-	public static void Step(int number, int total, string message)
+	public static void Step(int nNumber, int nTotal, string strMessage)
 	{
 		Console.WriteLine();
-		Write(ConsoleColor.Cyan, $"[{number}/{total}] {Redact(message)}");
+		Write(ConsoleColor.Cyan, $"[{nNumber}/{nTotal}] {Redact(strMessage)}");
 	}
 
-	public static void Info(string message)
+	public static void Info(string strMessage)
 	{
-		Console.WriteLine($"        {Redact(message)}");
+		Console.WriteLine($"        {Redact(strMessage)}");
 	}
 
-	public static void Detail(string message)
+	public static void Detail(string strMessage)
 	{
 		if(Verbose)
 		{
-			Write(ConsoleColor.DarkGray, $"        {Redact(message)}");
+			Write(ConsoleColor.DarkGray, $"        {Redact(strMessage)}");
 		}
 	}
 
 	/// <summary>Live output relayed from a child git process.</summary>
-	public static void Relay(string message)
+	public static void Relay(string strMessage)
 	{
-		Write(ConsoleColor.DarkGray, $"      | {Redact(message)}");
+		Write(ConsoleColor.DarkGray, $"      | {Redact(strMessage)}");
 	}
 
-	public static void Success(string message)
+	public static void Success(string strMessage)
 	{
-		Write(ConsoleColor.Green, $"        {Redact(message)}");
+		Write(ConsoleColor.Green, $"        {Redact(strMessage)}");
 	}
 
-	public static void Warn(string message)
+	public static void Warn(string strMessage)
 	{
-		Write(ConsoleColor.Yellow, $"  warn  {Redact(message)}");
+		Write(ConsoleColor.Yellow, $"  warn  {Redact(strMessage)}");
 	}
 
-	public static void Error(string message)
+	public static void Error(string strMessage)
 	{
-		Write(ConsoleColor.Red, $"  ERROR {Redact(message)}", toError: true);
+		Write(ConsoleColor.Red, $"  ERROR {Redact(strMessage)}", bToError: true);
 	}
 
 	public static void Blank()
@@ -114,27 +114,27 @@ internal static class ConsoleLog
 	#endregion
 
 	#region Privates
-	private static void Add(string value)
+	private static void Add(string strValue)
 	{
-		if(!Secrets.Contains(value, StringComparer.Ordinal))
+		if(!Secrets.Contains(strValue, StringComparer.Ordinal))
 		{
-			Secrets.Add(value);
+			Secrets.Add(strValue);
 		}
 	}
 
-	private static void Write(ConsoleColor colour, string message, bool toError = false)
+	private static void Write(ConsoleColor colour, string strMessage, bool bToError = false)
 	{
-		TextWriter writer = toError ? Console.Error : Console.Out;
+		TextWriter writer = bToError ? Console.Error : Console.Out;
 
 		if(!UseColour)
 		{
-			writer.WriteLine(message);
+			writer.WriteLine(strMessage);
 			return;
 		}
 
 		ConsoleColor previous = Console.ForegroundColor;
 		Console.ForegroundColor = colour;
-		writer.WriteLine(message);
+		writer.WriteLine(strMessage);
 		Console.ForegroundColor = previous;
 	}
 	#endregion

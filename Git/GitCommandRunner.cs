@@ -30,7 +30,7 @@ internal sealed record GitResult(int ExitCode, string StandardOutput, string Sta
 internal sealed class GitCommandRunner
 {
 	#region Constants
-	private const string ExecutableName = "git";
+	private const string EXECUTABLE_NAME = "git";
 	#endregion
 
 	#region Publics
@@ -39,14 +39,14 @@ internal sealed class GitCommandRunner
 	{
 		try
 		{
-			GitResult result = await this.RunAsync(["--version"], cancellationToken: cancellationToken);
+			GitResult gitResult = await this.RunAsync(["--version"], cancellationToken: cancellationToken);
 
-			if(!result.Success)
+			if(!gitResult.Success)
 			{
-				throw new MigrationException(ExitCode.GitError, $"'git --version' failed: {result.FailureText}");
+				throw new MigrationException(ExitCode.GitError, $"'git --version' failed: {gitResult.FailureText}");
 			}
 
-			return result.StandardOutput.Trim();
+			return gitResult.StandardOutput.Trim();
 		}
 		catch(Exception ex) when(ex is System.ComponentModel.Win32Exception or FileNotFoundException)
 		{
@@ -58,12 +58,12 @@ internal sealed class GitCommandRunner
 	}
 
 	/// <summary>True if the named executable subcommand responds, e.g. "lfs".</summary>
-	public async Task<bool> IsSubcommandAvailableAsync(string subcommand, CancellationToken cancellationToken)
+	public async Task<bool> IsSubcommandAvailableAsync(string strSubcommand, CancellationToken cancellationToken)
 	{
 		try
 		{
-			GitResult result = await this.RunAsync([subcommand, "version"], cancellationToken: cancellationToken);
-			return result.Success;
+			GitResult gitResult = await this.RunAsync([strSubcommand, "version"], cancellationToken: cancellationToken);
+			return gitResult.Success;
 		}
 		catch(Exception ex) when(ex is System.ComponentModel.Win32Exception or FileNotFoundException)
 		{
@@ -76,16 +76,16 @@ internal sealed class GitCommandRunner
 	/// <param name="authorizationHeader">A full HTTP Authorization header value, or null.</param>
 	/// <param name="relayProgress">Echo git's stderr to the console as it arrives.</param>
 	public async Task<GitResult> RunAsync(
-		IReadOnlyList<string> arguments,
-		string? workingDirectory = null,
-		string? authorizationHeader = null,
-		bool relayProgress = false,
+		IReadOnlyList<string> liArguments,
+		string? strWorkingDirectory = null,
+		string? strAuthorizationHeader = null,
+		bool bRelayProgress = false,
 		CancellationToken cancellationToken = default)
 	{
 		ProcessStartInfo startInfo = new()
 		{
-			FileName = ExecutableName,
-			WorkingDirectory = workingDirectory ?? Environment.CurrentDirectory,
+			FileName = EXECUTABLE_NAME,
+			WorkingDirectory = strWorkingDirectory ?? Environment.CurrentDirectory,
 			RedirectStandardOutput = true,
 			RedirectStandardError = true,
 			RedirectStandardInput = true,
@@ -93,14 +93,14 @@ internal sealed class GitCommandRunner
 			CreateNoWindow = true,
 		};
 
-		foreach(string argument in arguments)
+		foreach(string strArgument in liArguments)
 		{
-			startInfo.ArgumentList.Add(argument);
+			startInfo.ArgumentList.Add(strArgument);
 		}
 
-		ApplyEnvironment(startInfo, authorizationHeader);
+		ApplyEnvironment(startInfo, strAuthorizationHeader);
 
-		ConsoleLog.Detail($"git {string.Join(' ', arguments)}");
+		ConsoleLog.Detail($"git {string.Join(' ', liArguments)}");
 
 		using Process process = new() { StartInfo = startInfo };
 
@@ -118,7 +118,7 @@ internal sealed class GitCommandRunner
 
 			standardOutput.AppendLine(e.Data);
 
-			if(relayProgress && e.Data.Trim().Length > 0)
+			if(bRelayProgress && e.Data.Trim().Length > 0)
 			{
 				ConsoleLog.Relay(e.Data.Trim());
 			}
@@ -133,7 +133,7 @@ internal sealed class GitCommandRunner
 
 			standardError.AppendLine(e.Data);
 
-			if(relayProgress && e.Data.Trim().Length > 0)
+			if(bRelayProgress && e.Data.Trim().Length > 0)
 			{
 				ConsoleLog.Relay(e.Data.Trim());
 			}
@@ -164,7 +164,7 @@ internal sealed class GitCommandRunner
 	#endregion
 
 	#region Privates
-	private static void ApplyEnvironment(ProcessStartInfo startInfo, string? authorizationHeader)
+	private static void ApplyEnvironment(ProcessStartInfo startInfo, string? strAuthorizationHeader)
 	{
 		// Never let git block on an interactive credential prompt: this is a batch tool and
 		// a hidden prompt looks identical to a hang.
@@ -175,7 +175,7 @@ internal sealed class GitCommandRunner
 		// Stable, parseable output regardless of the user's locale.
 		startInfo.Environment["LC_ALL"] = "C";
 
-		List<(string Key, string Value)> settings =
+		List<(string Key, string Value)> liSettings =
 		[
 			// Empty value resets the helper list, so Git Credential Manager cannot pop up a
 			// dialog or substitute a cached identity for the one we were given.
@@ -183,17 +183,17 @@ internal sealed class GitCommandRunner
 			("core.askpass", string.Empty),
 		];
 
-		if(!string.IsNullOrEmpty(authorizationHeader))
+		if(!string.IsNullOrEmpty(strAuthorizationHeader))
 		{
-			settings.Add(("http.extraheader", $"AUTHORIZATION: {authorizationHeader}"));
+			liSettings.Add(("http.extraheader", $"AUTHORIZATION: {strAuthorizationHeader}"));
 		}
 
-		startInfo.Environment["GIT_CONFIG_COUNT"] = settings.Count.ToString();
+		startInfo.Environment["GIT_CONFIG_COUNT"] = liSettings.Count.ToString();
 
-		for(int i = 0; i < settings.Count; i++)
+		for(int nI = 0; nI < liSettings.Count; nI++)
 		{
-			startInfo.Environment[$"GIT_CONFIG_KEY_{i}"] = settings[i].Key;
-			startInfo.Environment[$"GIT_CONFIG_VALUE_{i}"] = settings[i].Value;
+			startInfo.Environment[$"GIT_CONFIG_KEY_{nI}"] = liSettings[nI].Key;
+			startInfo.Environment[$"GIT_CONFIG_VALUE_{nI}"] = liSettings[nI].Value;
 		}
 	}
 

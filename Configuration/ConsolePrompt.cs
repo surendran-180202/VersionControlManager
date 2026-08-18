@@ -7,23 +7,23 @@ internal static class ConsolePrompt
 {
 	#region Publics
 	/// <summary>Prompts until a non-empty value is given. Returns null if the user cancels.</summary>
-	public static string? ReadRequired(string label)
+	public static string? ReadRequired(string strLabel)
 	{
 		while(true)
 		{
-			Console.Write($"  {label}: ");
-			string? value = Console.ReadLine();
+			Console.Write($"  {strLabel}: ");
+			string? strValue = Console.ReadLine();
 
-			if(value is null)
+			if(strValue is null)
 			{
 				return null;   // stdin closed
 			}
 
-			value = value.Trim();
+			strValue = strValue.Trim();
 
-			if(value.Length > 0)
+			if(strValue.Length > 0)
 			{
-				return value;
+				return strValue;
 			}
 
 			Console.WriteLine("  A value is required.");
@@ -34,16 +34,16 @@ internal static class ConsolePrompt
 	/// Prompts for a secret, echoing nothing. Returns null if the user cancels.
 	/// Falls back to a plain read when stdin is not a console (piped or redirected input).
 	/// </summary>
-	public static string? ReadSecret(string label)
+	public static string? ReadSecret(string strLabel)
 	{
 		if(Console.IsInputRedirected)
 		{
-			return ReadRequired(label);
+			return ReadRequired(strLabel);
 		}
 
 		while(true)
 		{
-			Console.Write($"  {label}: ");
+			Console.Write($"  {strLabel}: ");
 			StringBuilder builder = new();
 
 			while(true)
@@ -88,14 +88,14 @@ internal static class ConsolePrompt
 		}
 	}
 
-	public static bool Confirm(string question)
+	public static bool Confirm(string strQuestion)
 	{
-		Console.Write($"  {question} [y/N]: ");
-		string? answer = Console.ReadLine()?.Trim();
+		Console.Write($"  {strQuestion} [y/N]: ");
+		string? strAnswer = Console.ReadLine()?.Trim();
 
-		return answer is not null
-			&& (answer.Equals("y", StringComparison.OrdinalIgnoreCase)
-				|| answer.Equals("yes", StringComparison.OrdinalIgnoreCase));
+		return strAnswer is not null
+			&& (strAnswer.Equals("y", StringComparison.OrdinalIgnoreCase)
+				|| strAnswer.Equals("yes", StringComparison.OrdinalIgnoreCase));
 	}
 	#endregion
 }

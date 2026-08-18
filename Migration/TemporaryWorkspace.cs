@@ -14,11 +14,11 @@ internal sealed class TemporaryWorkspace : IDisposable
 	#endregion
 
 	#region Constructors
-	private TemporaryWorkspace(string rootPath, string mirrorPath, bool keep)
+	private TemporaryWorkspace(string strRootPath, string strMirrorPath, bool bKeep)
 	{
-		this.RootPath = rootPath;
-		this.MirrorPath = mirrorPath;
-		this._keep = keep;
+		this.RootPath = strRootPath;
+		this.MirrorPath = strMirrorPath;
+		this._keep = bKeep;
 	}
 	#endregion
 
@@ -30,30 +30,30 @@ internal sealed class TemporaryWorkspace : IDisposable
 	#endregion
 
 	#region Publics
-	public static TemporaryWorkspace Create(string? parentDirectory, string repositoryName, bool keep)
+	public static TemporaryWorkspace Create(string? strParentDirectory, string strRepositoryName, bool bKeep)
 	{
-		string parent = string.IsNullOrWhiteSpace(parentDirectory)
+		string strParent = string.IsNullOrWhiteSpace(strParentDirectory)
 			? Path.GetTempPath()
-			: parentDirectory.Trim();
+			: strParentDirectory.Trim();
 
-		string root = Path.Combine(
-			parent,
-			$"vcm-{Sanitise(repositoryName)}-{DateTime.Now:yyyyMMdd-HHmmss}");
+		string strRoot = Path.Combine(
+			strParent,
+			$"vcm-{Sanitise(strRepositoryName)}-{DateTime.Now:yyyyMMdd-HHmmss}");
 
 		try
 		{
-			Directory.CreateDirectory(root);
+			Directory.CreateDirectory(strRoot);
 		}
 		catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or NotSupportedException)
 		{
 			throw new MigrationException(
 				ExitCode.ConfigurationError,
-				$"Could not create a working folder at '{root}': {ex.Message}",
+				$"Could not create a working folder at '{strRoot}': {ex.Message}",
 				"Pass --work-dir <path> to choose a writable location.");
 		}
 
 		// The trailing .git is the convention for a bare repository.
-		return new TemporaryWorkspace(root, Path.Combine(root, $"{Sanitise(repositoryName)}.git"), keep);
+		return new TemporaryWorkspace(strRoot, Path.Combine(strRoot, $"{Sanitise(strRepositoryName)}.git"), bKeep);
 	}
 
 	public void Dispose()
@@ -70,43 +70,43 @@ internal sealed class TemporaryWorkspace : IDisposable
 
 	#region Privates
 	/// <summary>Strips characters that are not valid in a path segment on any host OS.</summary>
-	private static string Sanitise(string name)
+	private static string Sanitise(string strName)
 	{
-		string cleaned = new([.. name.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '-' : c)]);
+		string strCleaned = new([.. strName.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '-' : c)]);
 
-		return cleaned.Trim('.', ' ') is { Length: > 0 } result ? result : "repository";
+		return strCleaned.Trim('.', ' ') is { Length: > 0 } strResult ? strResult : "repository";
 	}
 
 	/// <summary>
 	/// Deletes the tree, clearing read-only attributes first: git marks files in the object
 	/// store read-only, which makes a plain recursive delete fail on Windows.
 	/// </summary>
-	private static void TryDelete(string path)
+	private static void TryDelete(string strPath)
 	{
-		if(!Directory.Exists(path))
+		if(!Directory.Exists(strPath))
 		{
 			return;
 		}
 
 		try
 		{
-			foreach(string file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+			foreach(string strFile in Directory.EnumerateFiles(strPath, "*", SearchOption.AllDirectories))
 			{
-				FileAttributes attributes = File.GetAttributes(file);
+				FileAttributes attributes = File.GetAttributes(strFile);
 
 				if(attributes.HasFlag(FileAttributes.ReadOnly))
 				{
-					File.SetAttributes(file, attributes & ~FileAttributes.ReadOnly);
+					File.SetAttributes(strFile, attributes & ~FileAttributes.ReadOnly);
 				}
 			}
 
-			Directory.Delete(path, recursive: true);
+			Directory.Delete(strPath, recursive: true);
 		}
 		catch(Exception ex) when(ex is IOException or UnauthorizedAccessException)
 		{
 			// Cleanup is best-effort: the migration itself already succeeded or failed on
 			// its own merits, and a locked temp folder should not change that verdict.
-			ConsoleLog.Warn($"Could not remove the working folder '{path}': {ex.Message}");
+			ConsoleLog.Warn($"Could not remove the working folder '{strPath}': {ex.Message}");
 		}
 	}
 	#endregion

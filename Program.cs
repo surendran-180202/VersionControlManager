@@ -7,11 +7,11 @@ namespace VersionControlManager;
 internal static class Program
 {
 	#region Privates
-	private static async Task<int> Main(string[] args)
+	private static async Task<int> Main(string[] liArgs)
 	{
 		Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-		if(args.Any(a => a is "--help" or "-h" or "-?" or "/?"))
+		if(liArgs.Any(strArg => strArg is "--help" or "-h" or "-?" or "/?"))
 		{
 			WriteHelp();
 			return (int)ExitCode.Success;
@@ -34,12 +34,12 @@ internal static class Program
 
 		try
 		{
-			string settingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-			MigrationOptions options = OptionsBuilder.Build(args, settingsPath);
+			string strSettingsPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+			MigrationOptions migrationOptions = OptionsBuilder.Build(liArgs, strSettingsPath);
 
-			MigrationResult result = await new MigrationRunner(options).RunAsync(cancellation.Token);
+			MigrationResult migrationResult = await new MigrationRunner(migrationOptions).RunAsync(cancellation.Token);
 
-			WriteSummary(result);
+			WriteSummary(migrationResult);
 
 			return (int)ExitCode.Success;
 		}
@@ -88,29 +88,29 @@ internal static class Program
 		}
 	}
 
-	private static void WriteSummary(MigrationResult result)
+	private static void WriteSummary(MigrationResult migrationResult)
 	{
 		ConsoleLog.Blank();
 		ConsoleLog.Success("Migration complete.");
 		ConsoleLog.Blank();
-		ConsoleLog.Info($"Source:    {result.SourceDescription}");
-		ConsoleLog.Info($"Target:    {result.TargetDescription}{(result.CreatedTargetRepository ? " (created)" : "")}");
-		ConsoleLog.Info($"Commits:   {result.CommitCount:N0}");
-		ConsoleLog.Info($"Branches:  {result.BranchCount}");
-		ConsoleLog.Info($"Tags:      {result.TagCount}");
+		ConsoleLog.Info($"Source:    {migrationResult.SourceDescription}");
+		ConsoleLog.Info($"Target:    {migrationResult.TargetDescription}{(migrationResult.CreatedTargetRepository ? " (created)" : "")}");
+		ConsoleLog.Info($"Commits:   {migrationResult.CommitCount:N0}");
+		ConsoleLog.Info($"Branches:  {migrationResult.BranchCount}");
+		ConsoleLog.Info($"Tags:      {migrationResult.TagCount}");
 
-		if(result.NoteCount > 0)
+		if(migrationResult.NoteCount > 0)
 		{
-			ConsoleLog.Info($"Notes:     {result.NoteCount}");
+			ConsoleLog.Info($"Notes:     {migrationResult.NoteCount}");
 		}
 
-		if(result.DefaultBranch is not null)
+		if(migrationResult.DefaultBranch is not null)
 		{
-			ConsoleLog.Info($"Default:   {result.DefaultBranch}");
+			ConsoleLog.Info($"Default:   {migrationResult.DefaultBranch}");
 		}
 
 		ConsoleLog.Blank();
-		ConsoleLog.Info($"Open it at {result.TargetUrl}");
+		ConsoleLog.Info($"Open it at {migrationResult.TargetUrl}");
 		ConsoleLog.Blank();
 	}
 
@@ -119,12 +119,12 @@ internal static class Program
 		Console.WriteLine("""
 
             VersionControlManager
-              Copies a GitHub repository, including its full check-in history, into Azure DevOps.
+              Copies strArg GitHub repository, including its full check-in history, into Azure DevOps.
 
             USAGE
-              VersionControlManager [options]
+              VersionControlManager [migrationOptions]
 
-              Run with no options to be prompted for everything. Passwords are never echoed.
+              Run with no migrationOptions to be prompted for everything. Passwords are never echoed.
 
             CONNECTION OPTIONS
               --github-url <url>         GitHub repository, e.g. https://github.com/owner/repo
@@ -144,7 +144,7 @@ internal static class Program
               --keep                     Keep the temporary clone afterwards
 
             BEHAVIOUR OPTIONS
-              --non-interactive          Fail instead of prompting for a missing value
+              --non-interactive          Fail instead of prompting for strArg missing value
               --verbose                  Show the git commands being run
               --help                     Show this help
 
@@ -159,7 +159,7 @@ internal static class Program
 
             NOTE ON PASSWORDS
               GitHub and Azure DevOps both stopped accepting account passwords for Git and API
-              access. The value you supply must be a personal access token.
+              access. The value you supply must be strArg personal access token.
 
             EXIT CODES
               0 success   1 configuration   2 authentication   3 source

@@ -8,29 +8,29 @@ internal static class Describe
 	#endregion
 
 	#region Publics
-	public static string Bytes(long value)
+	public static string Bytes(long lValue)
 	{
-		if(value <= 0)
+		if(lValue <= 0)
 		{
 			return "0 bytes";
 		}
 
-		double size = value;
-		int unit = 0;
+		double size = lValue;
+		int nUnit = 0;
 
-		while(size >= 1024 && unit < Units.Length - 1)
+		while(size >= 1024 && nUnit < Units.Length - 1)
 		{
 			size /= 1024;
-			unit++;
+			nUnit++;
 		}
 
-		return unit == 0 ? $"{value:N0} bytes" : $"{size:N1} {Units[unit]}";
+		return nUnit == 0 ? $"{lValue:N0} bytes" : $"{size:N1} {Units[nUnit]}";
 	}
 
 	/// <summary>GitHub reports repository size in kilobytes.</summary>
-	public static string Kilobytes(long value)
+	public static string Kilobytes(long lValue)
 	{
-		return value <= 0 ? "unknown" : Bytes(value * 1024);
+		return lValue <= 0 ? "unknown" : Bytes(lValue * 1024);
 	}
 	#endregion
 }
