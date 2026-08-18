@@ -7,7 +7,7 @@ internal static class Describe
     private static readonly string[] Units = ["bytes", "KB", "MB", "GB", "TB"];
     #endregion
 
-    #region Public Methods
+    #region Publics
     public static string Bytes(long value)
     {
         if (value <= 0)

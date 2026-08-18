@@ -13,7 +13,7 @@ internal static class RestSupport
     public const string UserAgent = "VersionControlManager/1.0";
     #endregion
 
-    #region Public Methods
+    #region Publics
     /// <summary>
     /// Builds an HTTP Basic credential. Both GitHub and Azure DevOps accept a personal
     /// access token in the password position of Basic auth.
@@ -94,7 +94,7 @@ internal static class RestSupport
             $"{serviceName} response did not include '{propertyName}'.");
     #endregion
 
-    #region Private Methods
+    #region Privates
     /// <summary>
     /// The status code is inspected directly rather than matched against the error text:
     /// Azure DevOps can answer a missing resource with an HTML page, and string-matching

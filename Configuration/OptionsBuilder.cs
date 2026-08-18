@@ -15,7 +15,7 @@ internal static class OptionsBuilder
     private const string EnvironmentPrefix = "VCM_";
     #endregion
 
-    #region Public Methods
+    #region Publics
     public static MigrationOptions Build(string[] args, string settingsFilePath)
     {
         Dictionary<string, string?> cli = ParseArguments(args);
@@ -53,7 +53,7 @@ internal static class OptionsBuilder
     }
     #endregion
 
-    #region Private Methods
+    #region Privates
     private static void RegisterSecrets(MigrationOptions options)
     {
         ConsoleLog.RegisterSecret(options.GitHubPassword, options.GitHubUserName);

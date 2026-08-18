@@ -6,7 +6,7 @@ namespace VersionControlManager;
 
 internal static class Program
 {
-    #region Private Methods
+    #region Privates
     private static async Task<int> Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;

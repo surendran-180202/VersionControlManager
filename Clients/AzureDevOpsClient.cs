@@ -24,7 +24,7 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
         $"{project.CollectionUrl}/{Uri.EscapeDataString(project.Project)}/_apis/git";
     #endregion
 
-    #region Public Methods
+    #region Publics
     public async Task<AzureProjectInfo> GetProjectAsync(CancellationToken cancellationToken)
     {
         string url = $"{project.CollectionUrl}/_apis/projects/" +
@@ -129,7 +129,7 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
     public void Dispose() => client.Dispose();
     #endregion
 
-    #region Private Methods
+    #region Privates
     private static AzureRepositoryInfo ReadRepository(JsonElement element)
     {
         string remoteUrl = RestSupport.RequiredString(element, "remoteUrl", ServiceName);

@@ -5,7 +5,7 @@ namespace VersionControlManager.Configuration;
 /// <summary>Interactive console input, with secrets never echoed to the screen.</summary>
 internal static class ConsolePrompt
 {
-    #region Public Methods
+    #region Publics
     /// <summary>Prompts until a non-empty value is given. Returns null if the user cancels.</summary>
     public static string? ReadRequired(string label)
     {

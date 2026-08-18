@@ -29,7 +29,7 @@ internal sealed class TemporaryWorkspace : IDisposable
     public string MirrorPath { get; }
     #endregion
 
-    #region Public Methods
+    #region Publics
     public static TemporaryWorkspace Create(string? parentDirectory, string repositoryName, bool keep)
     {
         string parent = string.IsNullOrWhiteSpace(parentDirectory)
@@ -68,7 +68,7 @@ internal sealed class TemporaryWorkspace : IDisposable
     }
     #endregion
 
-    #region Private Methods
+    #region Privates
     /// <summary>Strips characters that are not valid in a path segment on any host OS.</summary>
     private static string Sanitise(string name)
     {

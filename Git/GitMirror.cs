@@ -39,7 +39,7 @@ internal sealed record MirrorSummary(
 /// </summary>
 internal sealed class GitMirror(GitCommandRunner git)
 {
-    #region Public Methods
+    #region Publics
     /// <summary>Clones every ref and object from <paramref name="cloneUrl"/> into a bare mirror.</summary>
     public async Task CloneAsync(
         string cloneUrl,
@@ -221,7 +221,7 @@ internal sealed class GitMirror(GitCommandRunner git)
     }
     #endregion
 
-    #region Private Methods
+    #region Privates
     private static long MeasureDirectory(string path)
     {
         try

@@ -20,7 +20,7 @@ internal sealed record AzureDevOpsProjectReference(
     public string ProjectWebUrl => $"{CollectionUrl}/{Uri.EscapeDataString(Project)}";
     #endregion
 
-    #region Public Methods
+    #region Publics
     public string RepositoryWebUrl(string repositoryName) =>
         $"{ProjectWebUrl}/_git/{Uri.EscapeDataString(repositoryName)}";
 
@@ -128,7 +128,7 @@ internal sealed record AzureDevOpsProjectReference(
     }
     #endregion
 
-    #region Private Methods
+    #region Privates
     /// <summary>The retired {org}.visualstudio.com form, which carries the org in the hostname.</summary>
     private static bool IsLegacyHost(string host) =>
         host.EndsWith(".visualstudio.com", StringComparison.OrdinalIgnoreCase)

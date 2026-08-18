@@ -31,7 +31,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
     private const int TotalSteps = 8;
     #endregion
 
-    #region Public Methods
+    #region Publics
     public async Task<MigrationResult> RunAsync(CancellationToken cancellationToken)
     {
         GitHubRepositoryReference source = GitHubRepositoryReference.Parse(options.GitHubUrl);
@@ -127,7 +127,7 @@ internal sealed class MigrationRunner(MigrationOptions options)
     }
     #endregion
 
-    #region Private Methods
+    #region Privates
     /// <summary>
     /// An explicit --target-repo wins, then a repository named in the Azure DevOps URL,
     /// then the GitHub repository's own name.

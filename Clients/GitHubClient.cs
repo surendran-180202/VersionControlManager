@@ -22,7 +22,7 @@ internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference 
     private const string ServiceName = "GitHub";
     #endregion
 
-    #region Public Methods
+    #region Publics
     public async Task<GitHubRepositoryInfo> GetRepositoryAsync(CancellationToken cancellationToken)
     {
         string url = $"{repository.ApiBaseUrl}/repos/" +

@@ -26,7 +26,7 @@ internal static class ConsoleLog
     public static bool Verbose { get; set; }
     #endregion
 
-    #region Public Methods
+    #region Publics
     /// <summary>
     /// Registers a value to be masked from all future output. Also registers the base64
     /// Basic-auth encodings we build from it, because those appear in git trace output.
@@ -95,7 +95,7 @@ internal static class ConsoleLog
     public static void Blank() => Console.WriteLine();
     #endregion
 
-    #region Private Methods
+    #region Privates
     private static void Add(string value)
     {
         if (!Secrets.Contains(value, StringComparer.Ordinal))

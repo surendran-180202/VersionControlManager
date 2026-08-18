@@ -13,7 +13,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
     public string WebUrl => $"https://{Host}/{Owner}/{Name}";
     #endregion
 
-    #region Public Methods
+    #region Publics
     public override string ToString() => $"{Owner}/{Name}";
 
     /// <summary>
@@ -85,7 +85,7 @@ internal sealed record GitHubRepositoryReference(string Host, string Owner, stri
     }
     #endregion
 
-    #region Private Methods
+    #region Privates
     private static string NormaliseHost(string host)
     {
         host = host.Trim().TrimEnd('.');

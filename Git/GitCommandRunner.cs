@@ -33,7 +33,7 @@ internal sealed class GitCommandRunner
     private const string ExecutableName = "git";
     #endregion
 
-    #region Public Methods
+    #region Publics
     /// <summary>Verifies git is on PATH and returns its version string.</summary>
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken)
     {
@@ -163,7 +163,7 @@ internal sealed class GitCommandRunner
     }
     #endregion
 
-    #region Private Methods
+    #region Privates
     private static void ApplyEnvironment(ProcessStartInfo startInfo, string? authorizationHeader)
     {
         // Never let git block on an interactive credential prompt: this is a batch tool and
