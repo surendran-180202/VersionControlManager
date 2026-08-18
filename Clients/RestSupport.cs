@@ -31,17 +31,16 @@ internal static class RestSupport
 	public static HttpClient CreateClient(string strUserName, string strSecret)
 	{
 		HttpClient client = new(new HttpClientHandler
-		{
-			// We authenticate explicitly on every request; following a redirect that strips
-			// or forwards our header would only make failures harder to read.
-			AllowAutoRedirect = true,
-		})
-		{
-			Timeout = TimeSpan.FromSeconds(100),
-		};
+		                        {
+			                        // We authenticate explicitly on every request; following a redirect that strips
+			                        // or forwards our header would only make failures harder to read.
+			                        AllowAutoRedirect = true,
+		                        })
+		                    {
+			                    Timeout = TimeSpan.FromSeconds(100),
+		                    };
 
-		client.DefaultRequestHeaders.Authorization =
-			new AuthenticationHeaderValue("Basic", BasicCredential(strUserName, strSecret));
+		client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", BasicCredential(strUserName, strSecret));
 		client.DefaultRequestHeaders.UserAgent.ParseAdd(USER_AGENT);
 
 		return client;
@@ -51,24 +50,14 @@ internal static class RestSupport
 	/// Sends a request and returns the parsed JSON body, mapping the failure modes each
 	/// service actually produces onto explainable errors.
 	/// </summary>
-	public static async Task<JsonDocument> SendAsync(
-		HttpClient client,
-		HttpRequestMessage request,
-		string strServiceName,
-		ExitCode failureCode,
-		CancellationToken cancellationToken)
+	public static async Task<JsonDocument> SendAsync(HttpClient client, HttpRequestMessage request, string strServiceName, ExitCode failureCode, CancellationToken cancellationToken)
 	{
 		return await ExecuteAsync(client, request, strServiceName, failureCode, false, cancellationToken)
-			   ?? throw new MigrationException(failureCode, $"{strServiceName} returned no content.");
+		       ?? throw new MigrationException(failureCode, $"{strServiceName} returned no content.");
 	}
 
 	/// <summary>As <see cref="SendAsync"/>, but returns null for 404 instead of failing.</summary>
-	public static Task<JsonDocument?> SendAllowingNotFoundAsync(
-		HttpClient client,
-		HttpRequestMessage request,
-		string strServiceName,
-		ExitCode failureCode,
-		CancellationToken cancellationToken)
+	public static Task<JsonDocument?> SendAllowingNotFoundAsync(HttpClient client, HttpRequestMessage request, string strServiceName, ExitCode failureCode, CancellationToken cancellationToken)
 	{
 		return ExecuteAsync(client, request, strServiceName, failureCode, true, cancellationToken);
 	}
@@ -77,30 +66,19 @@ internal static class RestSupport
 	{
 		HttpRequestMessage request = new(method, strUrl);
 
-		if(oPayload is not null)
-		{
-			request.Content = new StringContent(
-				JsonSerializer.Serialize(oPayload),
-				Encoding.UTF8,
-				"application/json");
-		}
+		if(oPayload is not null) request.Content = new StringContent(JsonSerializer.Serialize(oPayload), Encoding.UTF8, "application/json");
 
 		return request;
 	}
 
 	public static string? StringOrNull(JsonElement element, string strPropertyName)
 	{
-		return element.TryGetProperty(strPropertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String
-			? value.GetString()
-			: null;
+		return element.TryGetProperty(strPropertyName, out JsonElement value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 	}
 
 	public static string RequiredString(JsonElement element, string strPropertyName, string strServiceName)
 	{
-		return StringOrNull(element, strPropertyName)
-		?? throw new MigrationException(
-			ExitCode.TargetError,
-			$"{strServiceName} response did not include '{strPropertyName}'.");
+		return StringOrNull(element, strPropertyName) ?? throw new MigrationException(ExitCode.TargetError, $"{strServiceName} response did not include '{strPropertyName}'.");
 	}
 	#endregion
 
@@ -110,13 +88,7 @@ internal static class RestSupport
 	/// Azure DevOps can answer a missing resource with an HTML page, and string-matching
 	/// "404" in a message would confuse that with a genuine absence.
 	/// </summary>
-	private static async Task<JsonDocument?> ExecuteAsync(
-		HttpClient client,
-		HttpRequestMessage request,
-		string strServiceName,
-		ExitCode failureCode,
-		bool bAllowNotFound,
-		CancellationToken cancellationToken)
+	private static async Task<JsonDocument?> ExecuteAsync(HttpClient client, HttpRequestMessage request, string strServiceName, ExitCode failureCode, bool bAllowNotFound, CancellationToken cancellationToken)
 	{
 		HttpResponseMessage response;
 
@@ -126,10 +98,9 @@ internal static class RestSupport
 		}
 		catch(HttpRequestException ex)
 		{
-			throw new MigrationException(
-				failureCode,
-				$"Could not reach {strServiceName}: {ex.Message}",
-				"Check the URL, your network connection, and any proxy settings.");
+			throw new MigrationException(failureCode,
+			                             $"Could not reach {strServiceName}: {ex.Message}",
+			                             "Check the URL, your network connection, and any proxy settings.");
 		}
 		catch(TaskCanceledException) when(!cancellationToken.IsCancellationRequested)
 		{
@@ -142,34 +113,28 @@ internal static class RestSupport
 
 			if(response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
 			{
-				throw new MigrationException(
-					ExitCode.AuthenticationError,
-					$"{strServiceName} rejected the credentials ({(int)response.StatusCode} {response.StatusCode}).",
-					DescribeAuthFailure(strServiceName, strBody));
+				throw new MigrationException(ExitCode.AuthenticationError,
+				                             $"{strServiceName} rejected the credentials ({(int) response.StatusCode} {response.StatusCode}).",
+				                             DescribeAuthFailure(strServiceName, strBody));
 			}
 
 			// Checked before the JSON test below, so an HTML 404 is still read as "absent"
 			// rather than mistaken for a sign-in page.
-			if(bAllowNotFound && response.StatusCode == HttpStatusCode.NotFound)
-			{
-				return null;
-			}
+			if(bAllowNotFound && response.StatusCode == HttpStatusCode.NotFound) return null;
 
 			// Azure DevOps answers an unauthenticated API call with a sign-in page and a 2xx
 			// status instead of a 401, so a non-JSON body is the real signal.
 			if(!LooksLikeJson(strBody))
 			{
-				throw new MigrationException(
-					ExitCode.AuthenticationError,
-					$"{strServiceName} returned a sign-in page instead of data ({(int)response.StatusCode}).",
-					DescribeAuthFailure(strServiceName, strBody));
+				throw new MigrationException(ExitCode.AuthenticationError,
+				                             $"{strServiceName} returned a sign-in page instead of data ({(int) response.StatusCode}).",
+				                             DescribeAuthFailure(strServiceName, strBody));
 			}
 
 			if(!response.IsSuccessStatusCode)
 			{
-				throw new MigrationException(
-					failureCode,
-					$"{strServiceName} returned {(int)response.StatusCode} {response.StatusCode}: {ExtractMessage(strBody)}");
+				throw new MigrationException(failureCode,
+				                             $"{strServiceName} returned {(int) response.StatusCode} {response.StatusCode}: {ExtractMessage(strBody)}");
 			}
 
 			try
@@ -178,9 +143,7 @@ internal static class RestSupport
 			}
 			catch(JsonException ex)
 			{
-				throw new MigrationException(
-					failureCode,
-					$"Could not read the response from {strServiceName}: {ex.Message}");
+				throw new MigrationException(failureCode, $"Could not read the response from {strServiceName}: {ex.Message}");
 			}
 		}
 	}
@@ -201,9 +164,7 @@ internal static class RestSupport
 		{
 			using JsonDocument document = JsonDocument.Parse(strBody);
 
-			return StringOrNull(document.RootElement, "message")
-				?? StringOrNull(document.RootElement, "value")
-				?? strBody.Trim();
+			return StringOrNull(document.RootElement, "message") ?? StringOrNull(document.RootElement, "value") ?? strBody.Trim();
 		}
 		catch(JsonException)
 		{
@@ -213,8 +174,7 @@ internal static class RestSupport
 
 	private static string DescribeAuthFailure(string strServiceName, string strBody)
 	{
-		if(strBody.Contains("SAML", StringComparison.OrdinalIgnoreCase)
-			|| strBody.Contains("sso", StringComparison.OrdinalIgnoreCase))
+		if(strBody.Contains("SAML", StringComparison.OrdinalIgnoreCase) || strBody.Contains("sso", StringComparison.OrdinalIgnoreCase))
 		{
 			return "The token may need to be authorised for your organisation's SSO.";
 		}

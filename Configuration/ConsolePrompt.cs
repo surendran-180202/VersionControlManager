@@ -14,7 +14,7 @@ internal static class ConsolePrompt
 			Console.Write($"  {strLabel}: ");
 			string? strValue = Console.ReadLine();
 
-			if(strValue is null) return null;   // stdin closed
+			if(strValue is null) return null;   // stdin closed
 
 			strValue = strValue.Trim();
 
@@ -81,9 +81,7 @@ internal static class ConsolePrompt
 		Console.Write($"  {strQuestion} [y/N]: ");
 		string? strAnswer = Console.ReadLine()?.Trim();
 
-		return strAnswer is not null
-			&& (strAnswer.Equals("y", StringComparison.OrdinalIgnoreCase)
-				|| strAnswer.Equals("yes", StringComparison.OrdinalIgnoreCase));
+		return strAnswer is not null && (strAnswer.Equals("y", StringComparison.OrdinalIgnoreCase) || strAnswer.Equals("yes", StringComparison.OrdinalIgnoreCase));
 	}
 	#endregion
 }

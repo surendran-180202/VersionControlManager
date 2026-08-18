@@ -18,8 +18,8 @@ internal static class ConsoleLog
 	#endregion
 
 	#region Fields
-	private static readonly List<string> Secrets = [];
-	private static readonly bool UseColour = !Console.IsOutputRedirected;
+	private static readonly List<string> SECRETS = [];
+	private static readonly bool USE_COLOUR = !Console.IsOutputRedirected;
 	#endregion
 
 	#region Properties
@@ -45,7 +45,7 @@ internal static class ConsoleLog
 		if(string.IsNullOrEmpty(strText)) return string.Empty;
 
 		// Longest first, so a secret containing another secret is fully masked.
-		foreach(string strSecret in Secrets.OrderByDescending(s => s.Length))
+		foreach(string strSecret in SECRETS.OrderByDescending(s => s.Length))
 		{
 			strText = strText.Replace(strSecret, MASK, StringComparison.Ordinal);
 		}
@@ -107,14 +107,14 @@ internal static class ConsoleLog
 	#region Privates
 	private static void Add(string strValue)
 	{
-		if(!Secrets.Contains(strValue, StringComparer.Ordinal)) Secrets.Add(strValue);
+		if(!SECRETS.Contains(strValue, StringComparer.Ordinal)) SECRETS.Add(strValue);
 	}
 
 	private static void Write(ConsoleColor colour, string strMessage, bool bToError = false)
 	{
 		TextWriter writer = bToError ? Console.Error : Console.Out;
 
-		if(!UseColour)
+		if(!USE_COLOUR)
 		{
 			writer.WriteLine(strMessage);
 			return;

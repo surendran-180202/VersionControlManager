@@ -43,9 +43,10 @@ declaration.
 
 ## Phase 2 — naming
 
-Locals and parameters carry a prefix taken from their type. Constants are `UPPER_SNAKE_CASE`.
-Class-level fields keep whatever they are called — the prefix rule applies inside method
-bodies, not to the type's own members.
+Locals and parameters carry a prefix taken from their type. Constants and `static readonly`
+fields are `UPPER_SNAKE_CASE` — both hold fixed values, so they read alike. Ordinary instance
+fields keep whatever they are called: the prefix rule applies inside method bodies, not to the
+type's own state.
 
 | Type | Prefix | Example |
 | --- | --- | --- |
@@ -57,6 +58,7 @@ bodies, not to the type's own members.
 | `List<T>`, `IReadOnlyList<T>`, `T[]` | `li` | `liItems` |
 | A POCO class `Abc` | camelCase of the class name | `abc` |
 | `const`, any type | `UPPER_SNAKE_CASE` | `SERVICE_NAME` |
+| `static readonly`, any type | `UPPER_SNAKE_CASE` | `SECRETS` |
 
 Types outside this table — framework types like `HttpClient` or `JsonDocument`, enums,
 `double` — keep their existing names. Extending the POCO rule to every framework type reads

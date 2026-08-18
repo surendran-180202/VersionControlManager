@@ -122,11 +122,15 @@ for my $file (@files) {
             }
         }
 
-        # Constants are UPPER_SNAKE_CASE regardless of visibility.
-        if (!$is_comment && $line =~ /\bconst\s+[\w<>?\[\]]+\s+(\w+)\s*=/) {
-            my $const_name = $1;
-            report($file, $n, "constant '$const_name' should be UPPER_SNAKE_CASE")
-                unless $const_name =~ /^[A-Z][A-Z0-9_]*$/;
+        # Constants and static readonly fields are UPPER_SNAKE_CASE regardless of
+        # visibility - both are fixed values, so they read the same way. Instance
+        # `readonly` fields are ordinary state and keep their names.
+        if (!$is_comment && $line =~ /\b(const|static\s+readonly)\s+[\w<>?\[\],\s]+?\s+(\w+)\s*=/) {
+            my ($kind, $field_name) = ($1, $2);
+            $kind =~ s/\s+/ /;
+
+            report($file, $n, "$kind '$field_name' should be UPPER_SNAKE_CASE")
+                unless $field_name =~ /^[A-Z][A-Z0-9_]*$/;
         }
 
         # Locals and parameters carry a type prefix. Class-level fields are exempt,

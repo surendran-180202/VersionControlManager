@@ -4,7 +4,7 @@ namespace VersionControlManager.Migration;
 internal static class Describe
 {
 	#region Fields
-	private static readonly string[] Units = ["bytes", "KB", "MB", "GB", "TB"];
+	private static readonly string[] UNITS = ["bytes", "KB", "MB", "GB", "TB"];
 	#endregion
 
 	#region Publics
@@ -15,13 +15,13 @@ internal static class Describe
 		double size = lValue;
 		int nUnit = 0;
 
-		while(size >= 1024 && nUnit < Units.Length - 1)
+		while(size >= 1024 && nUnit < UNITS.Length - 1)
 		{
 			size /= 1024;
 			nUnit++;
 		}
 
-		return nUnit == 0 ? $"{lValue:N0} bytes" : $"{size:N1} {Units[nUnit]}";
+		return nUnit == 0 ? $"{lValue:N0} bytes" : $"{size:N1} {UNITS[nUnit]}";
 	}
 
 	/// <summary>GitHub reports repository size in kilobytes.</summary>
