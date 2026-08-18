@@ -10,33 +10,26 @@ namespace VersionControlManager.Migration;
 internal sealed class TemporaryWorkspace : IDisposable
 {
     #region Fields
-
     private readonly bool _keep;
-
     #endregion
 
     #region Constructors
-
     private TemporaryWorkspace(string rootPath, string mirrorPath, bool keep)
     {
         RootPath = rootPath;
         MirrorPath = mirrorPath;
         _keep = keep;
     }
-
     #endregion
 
     #region Properties
-
     public string RootPath { get; }
 
     /// <summary>Path the bare mirror is cloned into. Does not exist until git creates it.</summary>
     public string MirrorPath { get; }
-
     #endregion
 
     #region Public Methods
-
     public static TemporaryWorkspace Create(string? parentDirectory, string repositoryName, bool keep)
     {
         string parent = string.IsNullOrWhiteSpace(parentDirectory)
@@ -73,11 +66,9 @@ internal sealed class TemporaryWorkspace : IDisposable
 
         TryDelete(RootPath);
     }
-
     #endregion
 
     #region Private Methods
-
     /// <summary>Strips characters that are not valid in a path segment on any host OS.</summary>
     private static string Sanitise(string name)
     {
@@ -118,6 +109,5 @@ internal sealed class TemporaryWorkspace : IDisposable
             ConsoleLog.Warn($"Could not remove the working folder '{path}': {ex.Message}");
         }
     }
-
     #endregion
 }

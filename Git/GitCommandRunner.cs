@@ -8,13 +8,11 @@ namespace VersionControlManager.Git;
 internal sealed record GitResult(int ExitCode, string StandardOutput, string StandardError)
 {
     #region Properties
-
     public bool Success => ExitCode == 0;
 
     /// <summary>Whichever stream carries the failure text; git uses both inconsistently.</summary>
     public string FailureText =>
         StandardError.Trim().Length > 0 ? StandardError.Trim() : StandardOutput.Trim();
-
     #endregion
 }
 
@@ -32,13 +30,10 @@ internal sealed record GitResult(int ExitCode, string StandardOutput, string Sta
 internal sealed class GitCommandRunner
 {
     #region Constants
-
     private const string ExecutableName = "git";
-
     #endregion
 
     #region Public Methods
-
     /// <summary>Verifies git is on PATH and returns its version string.</summary>
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken)
     {
@@ -166,11 +161,9 @@ internal sealed class GitCommandRunner
 
         return new GitResult(process.ExitCode, standardOutput.ToString(), standardError.ToString());
     }
-
     #endregion
 
     #region Private Methods
-
     private static void ApplyEnvironment(ProcessStartInfo startInfo, string? authorizationHeader)
     {
         // Never let git block on an interactive credential prompt: this is a batch tool and
@@ -218,6 +211,5 @@ internal sealed class GitCommandRunner
             // The process is already gone, which is the outcome we wanted.
         }
     }
-
     #endregion
 }

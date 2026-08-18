@@ -19,13 +19,10 @@ internal sealed record GitHubRepositoryInfo(
 internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference repository) : IDisposable
 {
     #region Constants
-
     private const string ServiceName = "GitHub";
-
     #endregion
 
     #region Public Methods
-
     public async Task<GitHubRepositoryInfo> GetRepositoryAsync(CancellationToken cancellationToken)
     {
         string url = $"{repository.ApiBaseUrl}/repos/" +
@@ -61,6 +58,5 @@ internal sealed class GitHubClient(HttpClient client, GitHubRepositoryReference 
     }
 
     public void Dispose() => client.Dispose();
-
     #endregion
 }

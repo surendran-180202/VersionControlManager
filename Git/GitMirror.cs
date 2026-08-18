@@ -7,7 +7,6 @@ namespace VersionControlManager.Git;
 internal sealed record GitRef(string Name, string ObjectType)
 {
     #region Properties
-
     public bool IsBranch => Name.StartsWith("refs/heads/", StringComparison.Ordinal);
 
     public bool IsTag => Name.StartsWith("refs/tags/", StringComparison.Ordinal);
@@ -15,7 +14,6 @@ internal sealed record GitRef(string Name, string ObjectType)
     public bool IsNote => Name.StartsWith("refs/notes/", StringComparison.Ordinal);
 
     public string ShortName => Name.Split('/', 3) is [_, _, string rest] ? rest : Name;
-
     #endregion
 }
 
@@ -26,13 +24,11 @@ internal sealed record MirrorSummary(
     long SizeOnDiskBytes)
 {
     #region Properties
-
     public IReadOnlyList<GitRef> Branches => [.. Refs.Where(r => r.IsBranch)];
 
     public IReadOnlyList<GitRef> Tags => [.. Refs.Where(r => r.IsTag)];
 
     public IReadOnlyList<GitRef> Notes => [.. Refs.Where(r => r.IsNote)];
-
     #endregion
 }
 
@@ -44,7 +40,6 @@ internal sealed record MirrorSummary(
 internal sealed class GitMirror(GitCommandRunner git)
 {
     #region Public Methods
-
     /// <summary>Clones every ref and object from <paramref name="cloneUrl"/> into a bare mirror.</summary>
     public async Task CloneAsync(
         string cloneUrl,
@@ -224,11 +219,9 @@ internal sealed class GitMirror(GitCommandRunner git)
 
         return result.Success && value.Length > 0 ? value : null;
     }
-
     #endregion
 
     #region Private Methods
-
     private static long MeasureDirectory(string path)
     {
         try
@@ -284,6 +277,5 @@ internal sealed class GitMirror(GitCommandRunner git)
 
         return null;
     }
-
     #endregion
 }

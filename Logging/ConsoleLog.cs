@@ -10,30 +10,23 @@ namespace VersionControlManager.Logging;
 internal static class ConsoleLog
 {
     #region Constants
-
     private const string Mask = "***";
 
     /// <summary>Shortest string we are willing to treat as a secret. Redacting a
     /// two-character token would blank out unrelated text and hide real errors.</summary>
     private const int MinimumSecretLength = 6;
-
     #endregion
 
     #region Fields
-
     private static readonly List<string> Secrets = [];
     private static readonly bool UseColour = !Console.IsOutputRedirected;
-
     #endregion
 
     #region Properties
-
     public static bool Verbose { get; set; }
-
     #endregion
 
     #region Public Methods
-
     /// <summary>
     /// Registers a value to be masked from all future output. Also registers the base64
     /// Basic-auth encodings we build from it, because those appear in git trace output.
@@ -100,11 +93,9 @@ internal static class ConsoleLog
     public static void Error(string message) => Write(ConsoleColor.Red, $"  ERROR {Redact(message)}", toError: true);
 
     public static void Blank() => Console.WriteLine();
-
     #endregion
 
     #region Private Methods
-
     private static void Add(string value)
     {
         if (!Secrets.Contains(value, StringComparer.Ordinal))
@@ -128,6 +119,5 @@ internal static class ConsoleLog
         writer.WriteLine(message);
         Console.ForegroundColor = previous;
     }
-
     #endregion
 }

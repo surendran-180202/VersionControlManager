@@ -15,21 +15,16 @@ internal sealed record AzureRepositoryInfo(string Id, string Name, string Remote
 internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectReference project) : IDisposable
 {
     #region Constants
-
     private const string ServiceName = "Azure DevOps";
     private const string ApiVersion = "7.1";
-
     #endregion
 
     #region Properties
-
     private string ProjectApiRoot =>
         $"{project.CollectionUrl}/{Uri.EscapeDataString(project.Project)}/_apis/git";
-
     #endregion
 
     #region Public Methods
-
     public async Task<AzureProjectInfo> GetProjectAsync(CancellationToken cancellationToken)
     {
         string url = $"{project.CollectionUrl}/_apis/projects/" +
@@ -132,11 +127,9 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
     }
 
     public void Dispose() => client.Dispose();
-
     #endregion
 
     #region Private Methods
-
     private static AzureRepositoryInfo ReadRepository(JsonElement element)
     {
         string remoteUrl = RestSupport.RequiredString(element, "remoteUrl", ServiceName);
@@ -161,6 +154,5 @@ internal sealed class AzureDevOpsClient(HttpClient client, AzureDevOpsProjectRef
 
         return new UriBuilder(uri) { UserName = string.Empty, Password = string.Empty }.Uri.ToString();
     }
-
     #endregion
 }

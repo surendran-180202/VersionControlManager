@@ -24,11 +24,9 @@ internal sealed class MigrationException(ExitCode exitCode, string message, stri
     : Exception(message)
 {
     #region Properties
-
     public ExitCode ExitCode { get; } = exitCode;
 
     /// <summary>Optional follow-up telling the user how to resolve the failure.</summary>
     public string? Hint { get; } = hint;
-
     #endregion
 }

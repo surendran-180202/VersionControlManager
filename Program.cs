@@ -7,7 +7,6 @@ namespace VersionControlManager;
 internal static class Program
 {
     #region Private Methods
-
     private static async Task<int> Main(string[] args)
     {
         Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -168,6 +167,5 @@ internal static class Program
 
             """);
     }
-
     #endregion
 }

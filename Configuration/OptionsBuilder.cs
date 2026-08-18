@@ -12,13 +12,10 @@ namespace VersionControlManager.Configuration;
 internal static class OptionsBuilder
 {
     #region Constants
-
     private const string EnvironmentPrefix = "VCM_";
-
     #endregion
 
     #region Public Methods
-
     public static MigrationOptions Build(string[] args, string settingsFilePath)
     {
         Dictionary<string, string?> cli = ParseArguments(args);
@@ -54,11 +51,9 @@ internal static class OptionsBuilder
 
         return options;
     }
-
     #endregion
 
     #region Private Methods
-
     private static void RegisterSecrets(MigrationOptions options)
     {
         ConsoleLog.RegisterSecret(options.GitHubPassword, options.GitHubUserName);
@@ -300,6 +295,5 @@ internal static class OptionsBuilder
 
         return result;
     }
-
     #endregion
 }
